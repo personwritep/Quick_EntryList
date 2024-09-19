@@ -145,13 +145,11 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         'align-items: center; width: 120px; margin: 0 5px; } '+
         '#yearText { position: absolute; top: 6px; left: 84px; width: 16px; '+
         'padding: 0 1px; font-size: 14px; color: #1976d2; z-index: 1; } '+
-        '#ym_select_box { position: absolute; top: 0; left: 24px; height: 28px; '+
-        'width: 81px; padding: 1px 0 0 0; font: bold 18px Meiryo !important; '+
-        'text-align: center; border: 1px solid #ccc; outline: none; background: #fff; '+
-        'appearance: none; scrollbar-width: none; cursor: pointer; } '+
-        '#ym_select_box:focus { height: auto; z-index: 1; '+
-        'box-shadow: 0 10px 20px 0 #00000050; } '+
-        '#ym_select_box:hover { background: #bbdefb; } '+
+        '#ym_select_box { position: absolute; top: 0; left: 24px; height: 28px; width: 81px; '+
+        'padding: 1px 0 0 0; text-align: center; outline: none; border: 1px solid #ccc; '+
+        'background: #fff; scrollbar-width: none; overflow: hidden; cursor: pointer; } '+
+        '#ym_select_box:focus { height: auto; box-shadow: 0 10px 20px 0 #00000050; '+
+        'overflow-y: scroll; overscroll-behavior-y: none; z-index: 1; } '+
         '#ym_select_box option { font: bold 18px Meiryo; background: #fff; '+
         'padding: 1px 10px 0 0; } '+
         '#ym_select_box option:hover { background: #bbdefb; } '+
@@ -218,7 +216,10 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
                 set_year=ym_select_box.options[ym_select_box.selectedIndex].value;
                 location.href=
                     "https://blog.ameba.jp/ucs/entry/srventrylist.do?entry_ym="+
-                    set_year +"01"; }}}
+                    set_year +"01"; }
+
+            ym_select_box.onblur=function(){
+                ym_select_box.value=ym_select_box.value; }}}
 
 
 
