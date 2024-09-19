@@ -219,7 +219,9 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
                     set_year +"01"; }
 
             ym_select_box.onblur=function(){
-                ym_select_box.value=ym_select_box.value; }}}
+                setTimeout(()=>{
+                    ym_select_box.value=ym_select_box.value;
+                }, 20 ); }}}
 
 
 
