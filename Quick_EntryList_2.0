@@ -150,7 +150,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         'background: #fff; scrollbar-width: none; overflow: hidden; cursor: pointer; } '+
         '#ym_select_box:focus { height: auto; box-shadow: 0 10px 20px 0 #00000050; '+
         'overflow-y: scroll; overscroll-behavior-y: none; z-index: 1; } '+
-        '#ym_select_box option { font: bold 18px Meiryo; background: #fff; '+
+        '#ym_select_box option { font: bold 18px Meiryo; color: #333; background: #fff; '+
         'padding: 1px 10px 0 0; } '+
         '#ym_select_box option:hover { background: #bbdefb; } '+
         '#entryMonth { margin-right: -10px; } '+
@@ -594,4 +594,3 @@ if(location.pathname.includes('draft')){ // 下書き保存確認画面の場合
             location.href="https://blog.ameba.jp/ucs/entry/srventrylist.do"; }}
 
 } // 下書き保存確認画面の場合
-
