@@ -7,6 +7,7 @@
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
 // @match        https://blog.ameba.jp/ucs/entry/srventry*draft*
 // @match        https://blog.ameba.jp/ucs/top.do
+// @icon        https://www.google.com/s2/favicons?sz=64&domain=ameblo.jp
 // @grant        none
 // @updateURL        https://github.com/personwritep/Quick_EntryList/raw/main/Quick_EntryList.user.js
 // @downloadURL        https://github.com/personwritep/Quick_EntryList/raw/main/Quick_EntryList.user.js
