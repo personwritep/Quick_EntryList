@@ -140,7 +140,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         '.qe_help_d p { white-space: nowrap; } '+
         '#qe_panel { position: fixed; top: 0; right: calc(50% - 340px); z-index: 20; '+
         'padding: 6px 10px 8px 25px; background: #b0bec5; display: none; } '+
-        '#qe_panel button { padding: 2px 6px 0; margin-right: 15px; } '+
+        '#qe_panel button { font: 14px Meiryo; padding: 2px 6px 0; margin-right: 15px; } '+
         '#qe_panel .read_file { display: none; } '+
 
         '#entrySort { display: flex; position: relative; overflow: visible; z-index: 3; } '+
