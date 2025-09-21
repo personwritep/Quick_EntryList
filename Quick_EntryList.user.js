@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        2.3
+// @version        2.4
 // @description        記事の編集・削除の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -188,6 +188,8 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
     scheduled();
     weekend();
     to_ucstop();
+    show_edit_open();
+
 
 
     function disp_button(n){
@@ -398,6 +400,17 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         let ucsSubMenu=document.querySelector('#ucsSubMenu');
         if(!ucsSubMenu.querySelector('.ucs_sw')){
             ucsSubMenu.insertAdjacentHTML('beforeend', ucs_sw); }}
+
+
+
+    function show_edit_open(){
+        let action_link=document.querySelectorAll('.action a');
+        for(let k=0; k<action_link.length; k++){
+            action_link[k].addEventListener('click', function(event){
+                if(event.shiftKey){
+                    let sw=action_link[k].closest('.action');
+                    if(sw){
+                        sw.style.boxShadow='inset 0 0 0 16px #00cfb9'; }}}); }}
 
 
 
