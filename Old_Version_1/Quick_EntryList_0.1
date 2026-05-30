@@ -1,0 +1,129 @@
+// ==UserScript==
+// @name         Quick EntryList
+// @namespace    http://tampermonkey.net/
+// @version      0.1
+// @description  記事の編集・削除の機能拡張
+// @author       Ameba Blog User
+// @match        https://blog.ameba.jp/ucs/entry/srventrylist*
+// @grant        none
+// ==/UserScript==
+
+
+let year_list=[]; // 選択年度の配列
+let point_ym; // ユーザーの指定年月のクエリー文字
+
+point_ym=unescape(get_cookie('QE_Point'));
+if(get_cookie('QE_Point')==0){
+    point_ym='?'; }
+document.cookie='QE_Point='+ escape(point_ym) +'; Max-Age=2592000'; // Cookie更新
+
+
+
+let button=document.createElement('button');
+button.setAttribute('id', 'point_button');
+button.textContent='指定年月';
+if(!document.querySelector('#point_button') &&
+   document.querySelector('#ucsMainLeft h1')){
+    document.querySelector('#ucsMainLeft h1').appendChild(button); }
+
+
+let select=document.createElement('select');
+select.setAttribute('id', 'select_box');
+if(!document.querySelector('#select_box') &&
+   document.querySelector('#ucsMainLeft h1')){
+    document.querySelector('#ucsMainLeft h1').appendChild(select); }
+
+let style=document.createElement('style');
+style.setAttribute('id', 'years_style');
+style.textContent=
+    '#select_box { float: right; font: bold 18px Meiryo !important; '+
+    'height: 28px; padding: 0 10px; margin-top: -2px; } '+
+    '#select_box option { font: bold 18px Meiryo; } '+
+    '#point_button { float: right; height: 28px; margin-top: -2px; '+
+    'font-size: 15px; padding: 2px 6px; } ';
+
+if(!document.querySelector('#years_style') &&
+   document.querySelector('#ucsMainLeft h1')){
+    document.querySelector('#ucsMainLeft h1').appendChild(style); }
+
+
+
+set_year_list();
+disp_select();
+select_year();
+point_set();
+
+
+
+function point_set(){
+    let point_button=document.querySelector('#point_button');
+    if(point_button){
+        point_button.onclick=function(event){
+            if(!event.ctrlKey){
+                location.href=
+                    "https://blog.ameba.jp/ucs/entry/srventrylist.do"+ point_ym; }
+            else{
+                let ok=confirm(
+                    "　　　💢 Quick指定年月の登録を変更します\n\n"+
+                    "　　「OK」を押すと現在の年月が登録されます");
+
+                if(ok){
+                    let now_ym=location.search;
+                    if(!now_ym){
+                        now_ym='?'; }
+                    document.cookie=
+                        'QE_Point='+ escape(now_ym) +'; Max-Age=2592000'; } // Cookie更新
+                else{ ; }}}}}
+
+
+
+function select_year(){
+    let set_year;
+    let select_box=document.querySelector('#select_box');
+    if(select_box){
+        select_box.onchange=function(){
+            set_year=select_box.options[select_box.selectedIndex].value;
+            location.href=
+                "https://blog.ameba.jp/ucs/entry/srventrylist.do?entry_ym="+
+                set_year +"01"; }}}
+
+
+
+function set_year_list(){
+    let currentTime=new Date();
+    let year=currentTime.getFullYear();
+    for(let k=2000; k<year+1; k++){
+        year_list.push(k); }
+    year_list.reverse(); }
+
+
+
+function disp_select(){
+    let page_year;
+    let ym=location.search;
+    if(ym){
+        page_year=ym.slice(-6, -2); }
+    else{
+        page_year=0; }
+
+    let select_box=document.querySelector('#select_box');
+    if(select_box){
+        for(let k=0; k<year_list.length; k++){
+            let option=document.createElement('option');
+            option.text=year_list[k];
+            option.value=year_list[k];
+            select_box.appendChild(option);
+            if(page_year==year_list[k]){
+                option.selected=true; }}}}
+
+
+
+function get_cookie(name){
+    let cookie_req=document.cookie.split('; ').find(row=>row.startsWith(name));
+    if(cookie_req){
+        if(cookie_req.split('=')[1]==null){
+            return 0; }
+        else{
+            return cookie_req.split('=')[1]; }}
+    if(!cookie_req){
+        return 0; }}
