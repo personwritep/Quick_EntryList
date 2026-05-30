@@ -1,0 +1,162 @@
+// ==UserScript==
+// @name         Quick EntryList
+// @namespace    http://tampermonkey.net/
+// @version      0.2
+// @description  記事の編集・削除の機能拡張
+// @author       Ameba Blog User
+// @match        https://blog.ameba.jp/ucs/entry/srventrylist*
+// @grant        none
+// ==/UserScript==
+
+
+let year_list=[]; // 選択年度の配列
+let point_ym; // ユーザーの指定年月のクエリー文字
+let qe_ym=[]; // Quick EntryList 復帰ポイントのユーザー設定
+
+
+
+let read_json=localStorage.getItem('QE_Point'); // ローカルストレージ 保存名
+qe_ym=JSON.parse(read_json);
+if(qe_ym==null){
+    qe_ym=['', '?', '?', '?', '?']; }
+let write_json=JSON.stringify(qe_ym);
+localStorage.setItem('QE_Point', write_json); // ローカルストレージ 保存
+
+
+
+let disp=document.createElement("div");
+disp.setAttribute("id", "disp_qe");
+disp.innerHTML=
+    '<span class="qe_s">表示年月：</span>'+
+    '<button class="qe_button" id="qe_b1"></button>'+
+    '<button class="qe_button" id="qe_b2"></button>'+
+    '<button class="qe_button" id="qe_b3"></button>'+
+    '<button class="qe_button" id="qe_b4"></button>'+
+    '<select id="ym_select_box"></select>';
+
+if(!document.querySelector('#disp_qe') &&
+   document.querySelector('#ucsMainLeft h1')){
+    document.querySelector('#ucsMainLeft h1').appendChild(disp); }
+
+let style=document.createElement('style');
+style.setAttribute('id', 'years_style');
+style.textContent=
+    '#disp_qe { float: right; padding-left: 20px; margin-top: -2px; '+
+    'background: #fff; } '+
+    '.qe_s { font: normal 14px Meiryo; cursor: default; } '+
+    '.qe_s:hover::before { '+
+    'content: "Ctrl+Click：表示年月を登録　 Click：登録ページを表示"; '+
+    'position: absolute; margin: -27px 0 0; padding: 2px 6px 0; '+
+    'background: #fff; border: thin solid #aaa; } '+
+    '.qe_button { height: 24px; min-width: 70px; font-size: 15px; '+
+    'margin: 0 4px; padding: 2px 6px; border: 1px solid #ccc; '+
+    'vertical-align: -1px; cursor: pointer; } '+
+    '#ym_select_box { font: bold 18px Meiryo !important; '+
+    'height: 28px; padding: 0 10px; margin: 0 0 0 20px !important; } '+
+    '#ym_select_box option { font: bold 18px Meiryo; } ';
+
+if(!document.querySelector('#years_style') &&
+   document.querySelector('#disp_qe')){
+    document.querySelector('#disp_qe').appendChild(style); }
+
+for(let k=1; k<5; k++){
+    disp_button(k)}
+
+
+set_year_list();
+disp_select();
+select_year();
+point_set(1);
+point_set(2);
+point_set(3);
+point_set(4);
+
+
+
+function disp_button(n){
+    let button=document.querySelector('#qe_b'+n);
+    if(button){
+        let qe_y=qe_ym[n].slice(-6, -2);
+        let qe_m=qe_ym[n].slice(-2);
+        if(qe_y && qe_m){
+            button.textContent=qe_y+'-'+qe_m; }
+        else{
+            button.textContent='- - -'; }}}
+
+
+
+function select_year(){
+    let set_year;
+    let ym_select_box=document.querySelector('#ym_select_box');
+    if(ym_select_box){
+        ym_select_box.onchange=function(){
+            set_year=ym_select_box.options[ym_select_box.selectedIndex].value;
+            location.href=
+                "https://blog.ameba.jp/ucs/entry/srventrylist.do?entry_ym="+
+                set_year +"01"; }}}
+
+
+
+function set_year_list(){
+    let currentTime=new Date();
+    let year=currentTime.getFullYear();
+    for(let k=2000; k<year+1; k++){
+        year_list.push(k); }
+    year_list.reverse(); }
+
+
+
+function disp_select(){
+    let page_year;
+    let ym=location.search;
+    if(ym){
+        page_year=ym.slice(-6, -2); }
+    else{
+        page_year=0; }
+
+    let ym_select_box=document.querySelector('#ym_select_box');
+    if(ym_select_box){
+        for(let k=0; k<year_list.length; k++){
+            let option=document.createElement('option');
+            option.text=year_list[k];
+            option.value=year_list[k];
+            ym_select_box.appendChild(option);
+            if(page_year==year_list[k]){
+                option.selected=true; }}}}
+
+
+
+function point_set(n){
+    let point_button=document.querySelector('#qe_b'+n);
+    if(point_button){
+        point_button.onclick=function(event){
+            if(!event.ctrlKey){
+                location.href=
+                    "https://blog.ameba.jp/ucs/entry/srventrylist.do"+ qe_ym[n]; }
+            else{
+                let context;
+                let ny=location.search.slice(-6, -2);
+                let nm=location.search.slice(-2);
+                if(ny && nm){
+                    context=
+                        "　　　💢 Quick指定年月の登録を変更します\n\n"+
+                        "　　「OK」を押すと現在選択している "+ny+"年 "+nm+"月 のページが登録されます"; }
+                else{
+                    context=
+                        "　　　💢 Quick指定年月の登録を変更します\n\n"+
+                        "　　「OK」を押すと現在選択している 年月 のページが登録されます"; }
+
+                let ok=confirm(context);
+
+                if(ok){
+                    let now_ym=location.search;
+                    if(!now_ym){
+                        now_ym='?'; }
+                    qe_ym[n]=now_ym;
+                    let write_json=JSON.stringify(qe_ym); // ローカルストレージ 保存
+                    localStorage.setItem('QE_Point', write_json);
+
+                    disp_button(n)
+                }}
+
+        }}} // point_set()
