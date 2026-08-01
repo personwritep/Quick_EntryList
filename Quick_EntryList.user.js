@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        2.4
+// @version        2.5
 // @description        記事の編集・削除の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
 // @match        https://blog.ameba.jp/ucs/entry/srventry*draft*
+// @match        https://blog.ameba.jp/ucs/entry/srventryupdateinput.do*
+// @match        https://blog.ameba.jp/ucs/entry/srventryupdateend.do
 // @match        https://blog.ameba.jp/ucs/top.do
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=ameblo.jp
 // @grant        none
@@ -53,12 +55,6 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
     let write_json=JSON.stringify(qe_ym);
     localStorage.setItem('QE_Point_'+UserID, write_json); // ローカルストレージ 保存
-
-
-    let qe_copy=0; // 複製フラグ
-    if(sessionStorage.getItem('QE_copy')){ // ストレージより 取得
-        qe_copy=sessionStorage.getItem('QE_copy'); }
-    sessionStorage.setItem('QE_copy', qe_copy); // ストレージ 保存
 
 
 
@@ -416,17 +412,29 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
     let copy_button=document.querySelectorAll('.actions .process[onclick*="copyEntry"]');
     let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
+    let entry_created_datetime=document.querySelectorAll('input[name="entry_created_datetime"]');
     for(let k=0; k<copy_button.length; k++){
         copy_button[k].onmousedown=(event)=>{
             let title=entry_title[k].value;
             title=title.substring(0, 10); // タイトルの先頭10文字
-            sessionStorage.setItem('QE_copy', title); }} // ストレージの複製フラグをセット
+            sessionStorage.setItem('QE_copy', title);
+
+            if(event.ctrlKey){ //「複製」を「Ctrl + Click」でタイムスタンプをセット
+                let c_year=window.location.search;
+
+                let date=entry_created_datetime[k].value;
+                if(c_year && date){
+                    let post_time=c_year +'+'+ date;
+                    sessionStorage.setItem('QE_post', post_time); }} // 元記事のタイムスタンプ
+
+        }} // ストレージの複製フラグをセット
 
 
 
-    if(qe_copy!=0){ // 複製操作で最新ページを開いた時に実行
+    let qe_copy=sessionStorage.getItem('QE_copy');
+    if(qe_copy){ // 複製操作で最新ページを開いた時に実行
         let title=sessionStorage.getItem('QE_copy');
-        sessionStorage.setItem('QE_copy', 0); // ストレージの複製フラグをリセット
+        sessionStorage.removeItem('QE_copy'); // ストレージの複製フラグを削除
 
         let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
         let entry_id=document.querySelectorAll('input[name="entry_id"]');
@@ -439,7 +447,45 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
                 temp_id=entry_id[k].value; }} // IDの最新記事を取得
 
         if(entry_title[index].value.includes(title)){ // タイトルがコピー元と一致
-            entry_item[index].style.outline='2px solid #2196f3'; }} // 複製した記事の青枠表示
+            entry_item[index].style.outline='2px solid #2196f3'; // 複製した記事の青枠表示
+
+            let dupe_id=entry_id[index].value;
+            let post_time=sessionStorage.getItem('QE_post');
+            if(post_time){
+                let edit_url='/ucs/entry/srventryupdateinput.do?id='+ dupe_id;
+                location.href=edit_url; }
+        }} // if(qe_copy)
+
+    else{
+        let post_time=sessionStorage.getItem('QE_post');
+        if(post_time){
+            sessionStorage.removeItem('QE_post'); // 複製の最後にタイムスタンプフラグを削除
+            let search=post_time.split('+')[0];
+            search=search.substr(0, search.indexOf('ym=') + 9);
+
+            let goto='https://blog.ameba.jp/ucs/entry/srventrylist.do'+ search;
+            location.href=goto; }
+
+
+        let post_id=sessionStorage.getItem('QE_pid'); // 複製投稿の記事IDフラグがある場合
+        if(post_id){
+            setTimeout(()=>{
+                let post_index=-1;
+                let entry_item=document.querySelectorAll('.entry-item');
+                let entry_id=document.querySelectorAll('input[name="entry_id"]');
+                for(let k=0; k<entry_id.length; k++){
+                    if(entry_id[k].value==post_id){
+                        post_index=k;
+                        break; }}
+
+                if(post_index!=-1){
+                    entry_item[post_index].style.outline='2px solid #2196f3'; }
+
+                sessionStorage.removeItem('QE_pid'); // 記事IDのフラグを削除
+            }, 400);
+
+        } // if(post_id)
+    } // else
 
 
 
@@ -624,4 +670,79 @@ if(location.pathname.includes('draft')){ // 下書き保存確認画面の場合
         files_link.onclick=function(){
             location.href="https://blog.ameba.jp/ucs/entry/srventrylist.do"; }}
 
+
+
+    let post_time=sessionStorage.getItem('QE_post');
+    if(post_time){ // 複製作業で下書き投稿をした場合
+        sessionStorage.removeItem('QE_post'); // タイムスタンプフラグを削除
+        setTimeout(()=>{
+            window.close(); // 確認画面を閉じる
+        }, 1000);
+    }
+
 } // 下書き保存確認画面の場合
+
+
+
+
+if(location.pathname.includes('srventryupdateend.do')){ // 投稿確認画面の場合
+    let post_time=sessionStorage.getItem('QE_post');
+    if(post_time){
+        sessionStorage.removeItem('QE_post'); // タイムスタンプフラグを削除
+        setTimeout(()=>{
+            window.close(); // 確認画面を閉じる
+        }, 200);
+    }
+} // 投稿確認画面の場合
+
+
+
+
+if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場合（複製操作のみ）
+    let post_time=sessionStorage.getItem('QE_post');
+    if(post_time){
+        let c_ym=post_time.split('ym=')[1].substring(0, 4) +'-'+post_time.split('ym=')[1].substring(4, 6)
+        let c_day=post_time.split('月')[1].substring(0, 2);
+        let c_time=post_time.split('日')[1].substring(0, 6);
+        if(c_ym && c_day && c_time){
+            let new_post_time=c_ym +'-'+ c_day + c_time +':00';
+
+            let entry_created_datetime=
+                document.querySelector('input[name="entry_created_datetime"]');
+            if(entry_created_datetime){
+                entry_created_datetime.value=new_post_time; // コピー元の投稿日時を設定
+
+                let calendar=document.querySelector('#js-calendarClickBox');
+                if(calendar){
+                    calendar.disabled=true;
+                    let stamp=calendar.querySelector('#js-entryDatePreview');
+                    if(stamp){
+                        stamp.textContent=new_post_time; }} // 投稿日時の設定枠を書換え
+
+                let p_title=document.querySelector('input[name="entry_title"]');
+                if(p_title){
+                    let title_tx=p_title.value;
+                    p_title.value=title_tx.replace('【複製】', '©'); } // 記事タイトル先頭に「©」を追加
+
+                let entry_id=document.querySelector('input[name="entry_id"]');
+                if(entry_id){
+                    let post_id=entry_id.value;
+                    sessionStorage.setItem('QE_pid', post_id); } // 投稿記事のIDを記録
+
+                setTimeout(()=>{
+                    let publish_b1=document.querySelector('button.js-submitButton[publishflg="1"]');
+                    if(publish_b1){
+                        publish_b1.click(); }
+
+                    let prevUrl=document.referrer;
+                    if(prevUrl){
+                        window.open(prevUrl, '_blank');
+                        setTimeout(()=>{
+                            window.close();
+                        }, 400); }
+                }, 1000);
+
+            } // if(entry_created_datetime)
+        }} // if(post_time)
+
+} // 編集画面の場合
