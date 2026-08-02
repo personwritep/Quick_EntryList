@@ -712,35 +712,63 @@ if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場�
             if(entry_created_datetime){
                 entry_created_datetime.value=new_post_time; // コピー元の投稿日時を設定
 
-                let calendar=document.querySelector('#js-calendarClickBox');
-                if(calendar){
-                    calendar.disabled=true;
-                    let stamp=calendar.querySelector('#js-entryDatePreview');
-                    if(stamp){
-                        stamp.textContent=new_post_time; }} // 投稿日時の設定枠を書換え
 
-                let p_title=document.querySelector('input[name="entry_title"]');
-                if(p_title){
-                    let title_tx=p_title.value;
-                    p_title.value=title_tx.replace('【複製】', '©'); } // 記事タイトル先頭に「©」を追加
+                let sleep=(ms)=> new Promise(resolve=> setTimeout(resolve, ms));
 
-                let entry_id=document.querySelector('input[name="entry_id"]');
-                if(entry_id){
-                    let post_id=entry_id.value;
-                    sessionStorage.setItem('QE_pid', post_id); } // 投稿記事のIDを記録
+                async function runSequence(){
+                    task1();
+                    await sleep(200); // 200ms待機
+                    task2();
+                    await sleep(200);
+                    task3();
+                    await sleep(200);
+                    task4(); }
 
-                setTimeout(()=>{
+
+                function task1(){
+                    let calendar=document.querySelector('#js-calendarClickBox');
+                    if(calendar){
+                        calendar.disabled=true;
+                        let stamp=calendar.querySelector('#js-entryDatePreview');
+                        if(stamp){
+                            stamp.textContent=new_post_time; }} // 投稿日時の設定枠を書換え
+
+                    let p_title=document.querySelector('input[name="entry_title"]');
+                    if(p_title){
+                        let title_tx=p_title.value;
+                        p_title.value=title_tx.replace('【複製】', '©'); } // 記事タイトル先頭に「©」を追加
+
+                    let entry_id=document.querySelector('input[name="entry_id"]');
+                    if(entry_id){
+                        let post_id=entry_id.value;
+                        sessionStorage.setItem('QE_pid', post_id); } // 投稿記事のIDを記録
+                } // task1()
+
+
+                function task2(){
                     let publish_b1=document.querySelector('button.js-submitButton[publishflg="1"]');
                     if(publish_b1){
-                        publish_b1.click(); }
+                        let mevent=new MouseEvent('mousedown', {
+                            bubbles: true,
+                            cancelable: true, });
+                        publish_b1.dispatchEvent(mevent); // SP Coutionの離脱防止をキャンセル
+                        publish_b1.click(); // 下書き保存
+                    }} // task2()
 
-                    let prevUrl=document.referrer;
-                    if(prevUrl){
-                        window.open(prevUrl, '_blank');
-                        setTimeout(()=>{
-                            window.close();
-                        }, 400); }
-                }, 1000);
+
+                function task3(){
+                    let prev_url=document.referrer;
+                    if(prev_url){
+                        window.open(prev_url, '_blank'); // 記事の編集・削除を別タブに開く
+                    }} // task3()
+
+
+                function task4(){
+                    window.close();
+                } // task4()
+
+
+                runSequence();
 
             } // if(entry_created_datetime)
         }} // if(post_time)
