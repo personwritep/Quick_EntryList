@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        2.6
+// @version        2.7
 // @description        記事の編集・削除の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -410,133 +410,203 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
 
 
+    let fuse=0; // 0:無効 1:有効 パネル複製機能の有効・無効のフラグ 🟢
+
     let copy_button=document.querySelectorAll('.actions .process[onclick*="copyEntry"]');
     let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
-    let entry_created_datetime=document.querySelectorAll('input[name="entry_created_datetime"]');
     for(let k=0; k<copy_button.length; k++){
-
         copy_button[k].onmouseup=(event)=>{
-
             let title=entry_title[k].value;
             title=title.substring(0, 10); // タイトルの先頭10文字
             sessionStorage.setItem('QE_copy', title);
 
-            if(event.ctrlKey){ //「複製」を「Ctrl + Click」で元のタイムスタンプをセット 🟠
+            let li_item=copy_button[k].closest('.entry-item');
+            let y_pos=li_item.getBoundingClientRect().top + window.scrollY - 45;
+            if(event.ctrlKey){ //「複製」を「Ctrl + Click」でタイムスタンプをセット 🟠
+                panel_copy(y_pos, k); }
 
-                let nowPage=document.querySelector('input[name="nowPage"]');
-                let page=nowPage.value;
-                let urlParam=document.querySelector('input[name="urlParam"]');
-                let param=urlParam.value;
-
-                let date=entry_created_datetime[k].value;
-                if(page && param && date){
-                    let post_time='?pageID='+ page +'&'+ param +'+'+ date;
-                    sessionStorage.setItem('QE_post', post_time); }
-
-            } // 元記事のタイムスタンプ
-
-            else if(event.altKey){ //「複製」を「Alt + Click」で任意のタイムスタンプをセット 🟠
-                safe(1);
-
-                let y_pos=event.pageY;
-
-                let panel=
-                    '<div class="date_in">'+
-                    '<input class="set1" type="number" min="2000" step="1"> 年 '+
-                    '<input class="set2" type="number" min="1" max="12" step="1"> 月 '+
-                    '<input class="set3" type="number" min="1" max="31" step="1" value="01"> 日　'+
-                    '<input class="set4" type="number" min="0" max="23" step="1" value="00">'+
-                    '：<input class="set5" type="number" min="0" max="59" step="1" value="00">　'+
-                    '<input class="set6" type="submit" value="✖">'+
-                    '<style>'+
-                    '.date_in { position: absolute; top: '+ (y_pos - 75) +'px; '+
-                    'left: calc(50% - 400px); z-index: 100; padding: 10px 12px; '+
-                    'font: normal 16px/22px Meiryo; background: #fff; border: 1px solid #aaa; } '+
-                    '.set1, .set2, .set3, .set4, .set5, .set6 { '+
-                    'font: 16px Meiryo; padding: 2px 2px 0 2px; text-align: center; } '+
-                    '.set1 { width: 60px; } '+
-                    '.set2, .set3, .set4, .set5 { width: 38px; } '+
-                    '.date_in input[type=number]::-webkit-inner-spin-button { '+
-                    'height: 20px; margin-top: 2px; } '+
-                    '.set6 { padding: 2px 2px 0; } '+
-                    '</style></div>';
-
-                if(!document.querySelector('.date_in')){
-                    document.body.insertAdjacentHTML('beforeend', panel); }
+        }} // for()
 
 
-                let urlParam=document.querySelector('input[name="urlParam"]');
-                let param=urlParam.value;
-                let y=param.substring(9, 13);
-                let m=param.slice(-2);
+    function panel_copy(y_pos, k){
+        safe(1);
+        fuse=1; // 🟢
 
-                let set1=document.querySelector('.set1');
-                set1.value=y;
+        let copy_mode=localStorage.getItem('QE_Copy_mode'); // ローカルストレージ 保存名
+        if(copy_mode==null){
+            copy_mode=0; } // copy_mode「0」: Same ,「1」: Assign
+        localStorage.setItem('QE_Copy_mode', copy_mode); // ローカルストレージ 保存
 
-                let set2=document.querySelector('.set2');
-                set2.value=m.padStart(2, '0');
-                set2.oninput=()=>{
-                    set2.value=set2.value.padStart(2, '0'); }
-
-                let set3=document.querySelector('.set3');
-                set3.value=set3.value.padStart(2, '0');
-                set3.oninput=()=>{
-                    set3.value=set3.value.padStart(2, '0'); }
-
-                let set4=document.querySelector('.set4');
-                set4.value=set4.value.padStart(2, '0');
-                set4.oninput=()=>{
-                    set4.value=set4.value.padStart(2, '0'); }
-
-                let set5=document.querySelector('.set5');
-                set5.value=set5.value.padStart(2, '0');
-                set5.oninput=()=>{
-                    set5.value=set5.value.padStart(2, '0'); }
-
-                let set6=document.querySelector('.set6');
-                set6.onclick=()=>{
-                    document.querySelector('.date_in').remove();
-                    safe(0);
-                    let sw= copy_button[k].closest('.action');
-                    if(sw){
-                        sw.style.boxShadow=''; }}
+        let assign_date=localStorage.getItem('QE_Assign_date'); // ローカルストレージ 保存名
+        if(assign_date==null){
+            assign_date='202608051200'; } // 指定投稿日付の初期値
+        localStorage.setItem('QE_Assign_date', assign_date); // ローカルストレージ 保存
 
 
-                if(document.querySelector('.date_in')){
-                    setTimeout(()=>{
-                        copy_button[k].disabled=false;
-                        let sw=copy_button[k].closest('.action');
-                        if(sw){
-                            sw.style.boxShadow='inset 0 0 0 16px #b1dcff'; }
+        let panel=
+            '<div class="date_in">'+
+            '<button class="set0" type="button">'+
+            '<span class="same">Same</span><span class="assign">Assign</span>'+
+            '</button>　'+
+            '<input class="set1" type="number" min="2000" step="1"> 年 '+
+            '<input class="set2" type="number" min="1" max="12" step="1"> 月 '+
+            '<input class="set3" type="number" min="1" max="31" step="1" value="01"> 日　'+
+            '<input class="set4" type="number" min="0" max="23" step="1" value="00">'+
+            '：<input class="set5" type="number" min="0" max="59" step="1" value="00">　'+
+            '<input class="set6" type="submit" value="✖">'+
+            '<style>'+
+            '.date_in { position: absolute; top: '+ y_pos +'px; '+
+            'left: calc(50% - 420px); z-index: 100; padding: 6px 12px; color: #000; '+
+            'font: normal 16px/22px Meiryo; background: #6bc1cf; border: 1px solid #aaa; } '+
+            '.set0, .set1, .set2, .set3, .set4, .set5, .set6 { '+
+            'font: 16px Meiryo; padding: 2px 2px 0 2px; text-align: center; } '+
+            '.set0 { width: 64px; box-shadow: inset 0 0 0 80px #ffd54f; } '+
+            '.set0 .same { display: none; } .set0 .assign { display: inline; } '+
+            '.set0.same { box-shadow: inset 0 0 0 80px #add8df; } '+
+            '.set0.same .same { display: inline; } .set0.same .assign { display: none; } '+
+            '.set1 { width: 48px; } '+
+            '.set2, .set3, .set4, .set5 { width: 28px; } '+
+            '.date_in input[type=number]::-webkit-inner-spin-button { '+
+            ' -webkit-appearance: none; margin: 0; } '+
+            '.date_in input[type=number] { -moz-appearance: textfield; appearance: textfield; } '+
+            '.set6 { padding: 2px 2px 0; } '+
+            '</style></div>';
 
-                        copy_button[k].onmousedown=(event)=>{
-                            if(set1 && set2 && set3 && set4 && set5){
-                                let post_time='?entry_ym='+ set1.value + set2.value +'+'+
-                                    set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value;
-                                sessionStorage.setItem('QE_post', post_time); }
-                        }}, 500); }
-
-            } // if(event.altKey)
-
-        } // copy_button[k].onmouseup
+        if(!document.querySelector('.date_in')){
+            document.body.insertAdjacentHTML('beforeend', panel); }
 
 
+        let post_time;
 
-        function safe(n){
-            let prosess_b=document.querySelectorAll('button.process');
-            let prosess_a=document.querySelectorAll('a.process');
-            if(n==1){
-                for(let k=0; k<prosess_b.length; k++){
-                    prosess_b[k].disabled=true; }
-                for(let k=0; k<prosess_a.length; k++){
-                    prosess_a[k].style.pointerEvents='none'; }}
+        let set0=document.querySelector('.set0');
+        let set1=document.querySelector('.set1');
+        let set2=document.querySelector('.set2');
+        let set3=document.querySelector('.set3');
+        let set4=document.querySelector('.set4');
+        let set5=document.querySelector('.set5');
+        let set6=document.querySelector('.set6');
+
+        let nowPage=document.querySelector('input[name="nowPage"]');
+        let page=nowPage.value;
+        let urlParam=document.querySelector('input[name="urlParam"]');
+        let param=urlParam.value;
+        let entry_created_datetime=
+            document.querySelectorAll('input[name="entry_created_datetime"]');
+        let date=entry_created_datetime[k].value;
+
+
+        if(set0){
+            if(copy_mode==0){
+                set0.classList.add('same');
+                get_posted_time(param, date); }
             else{
-                for(let k=0; k<prosess_b.length; k++){
-                    prosess_b[k].disabled=false; }
-                for(let k=0; k<prosess_a.length; k++){
-                    prosess_a[k].style.pointerEvents=''; }}}
+                set0.classList.remove('same');
+                get_assign_time(); }
 
-    } // ストレージの複製フラグをセット
+            set0.onclick=()=>{
+                if(copy_mode==0){
+                    copy_mode=1;
+                    set0.classList.remove('same');
+                    get_assign_time(); }
+                else{
+                    copy_mode=0;
+                    set0.classList.add('same');
+                    get_posted_time(param, date); }
+
+                localStorage.setItem('QE_Copy_mode', copy_mode); }} // ローカルストレージ 保存
+
+
+        function get_posted_time(param, date){
+            set1.value=param.substring(9, 13);
+            set2.value=param.slice(-2);
+            set3.value=date.substring(3, 5);
+            set4.value=date.substring(7, 9);
+            set5.value=date.substring(10, 12); }
+
+        function get_assign_time(){
+            assign_date=localStorage.getItem('QE_Assign_date');
+            set1.value=assign_date.substring(0, 4);
+            set2.value=assign_date.substring(4, 6);
+            set3.value=assign_date.substring(6, 8);
+            set4.value=assign_date.substring(8, 10);
+            set5.value=assign_date.substring(10, 12); }
+
+        function save_assign(){
+            assign_date=set1.value + set2.value +set3.value + set4.value + set5.value;
+            localStorage.setItem('QE_Assign_date', assign_date); }
+
+
+        set1.oninput=()=>{
+            if(copy_mode==1){
+                save_assign(); }}
+
+        set2.oninput=()=>{
+            set2.value=set2.value.padStart(2, '0');
+            if(copy_mode==1){
+                save_assign(); }}
+
+        set3.oninput=()=>{
+            set3.value=set3.value.padStart(2, '0');
+            if(copy_mode==1){
+                save_assign(); }}
+
+        set4.oninput=()=>{
+            set4.value=set4.value.padStart(2, '0');
+            if(copy_mode==1){
+                save_assign(); }}
+
+        set5.oninput=()=>{
+            set5.value=set5.value.padStart(2, '0');
+            if(copy_mode==1){
+                save_assign(); }}
+
+
+        set6.onclick=()=>{
+            document.querySelector('.date_in').remove();
+            safe(0);
+            fuse=0; // 🟢
+            let sw=copy_button[k].closest('.action');
+            if(sw){
+                sw.style.boxShadow=''; }}
+
+
+        if(document.querySelector('.date_in')){
+            setTimeout(()=>{
+                copy_button[k].disabled=false;
+                let sw=copy_button[k].closest('.action');
+                if(sw){
+                    sw.style.boxShadow='inset 0 0 0 16px #b1dcff'; }
+
+                copy_button[k].onmousedown=(event)=>{
+                    if(fuse==1){ // 🟢
+                        if(copy_mode==0){
+                            post_time='?pageID='+ page +'&entry_ym='+
+                                set1.value + set2.value +'+'+
+                                set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value; }
+                        else if(copy_mode==1){
+                            post_time='?entry_ym='+
+                                set1.value + set2.value +'+'+
+                                set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value; }
+
+                        sessionStorage.setItem('QE_post', post_time);
+                    }}}, 500); }
+
+    } // panel_copy()
+
+
+    function safe(n){
+        let prosess_b=document.querySelectorAll('button.process');
+        let prosess_a=document.querySelectorAll('a.process');
+        if(n==1){
+            for(let k=0; k<prosess_b.length; k++){
+                prosess_b[k].disabled=true; }
+            for(let k=0; k<prosess_a.length; k++){
+                prosess_a[k].style.pointerEvents='none'; }}
+        else{
+            for(let k=0; k<prosess_b.length; k++){
+                prosess_b[k].disabled=false; }
+            for(let k=0; k<prosess_a.length; k++){
+                prosess_a[k].style.pointerEvents=''; }}}
 
 
 
