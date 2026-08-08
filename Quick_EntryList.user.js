@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        2.7
+// @version        2.8
 // @description        記事の編集・削除の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -416,14 +416,14 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
     let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
     for(let k=0; k<copy_button.length; k++){
         copy_button[k].onmouseup=(event)=>{
-            let title=entry_title[k].value;
-            title=title.substring(0, 10); // タイトルの先頭10文字
-            sessionStorage.setItem('QE_copy', title);
-
-            let li_item=copy_button[k].closest('.entry-item');
-            let y_pos=li_item.getBoundingClientRect().top + window.scrollY - 45;
-            if(event.ctrlKey){ //「複製」を「Ctrl + Click」でタイムスタンプをセット 🟠
+            if(event.ctrlKey){ //「複製」を「Ctrl+Click」でタイムスタンプをセット 🟠
+                let li_item=copy_button[k].closest('.entry-item');
+                let y_pos=li_item.getBoundingClientRect().top + window.scrollY - 45;
                 panel_copy(y_pos, k); }
+            else{
+                let title=entry_title[k].value;
+                title=title.substring(0, 10); // タイトルの先頭10文字
+                sessionStorage.setItem('QE_copy', title); }
 
         }} // for()
 
@@ -445,31 +445,32 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
         let panel=
             '<div class="date_in">'+
-            '<button class="set0" type="button">'+
+            '<button id="set0" type="button">'+
             '<span class="same">Same</span><span class="assign">Assign</span>'+
             '</button>　'+
-            '<input class="set1" type="number" min="2000" step="1"> 年 '+
-            '<input class="set2" type="number" min="1" max="12" step="1"> 月 '+
-            '<input class="set3" type="number" min="1" max="31" step="1" value="01"> 日　'+
-            '<input class="set4" type="number" min="0" max="23" step="1" value="00">'+
-            '：<input class="set5" type="number" min="0" max="59" step="1" value="00">　'+
-            '<input class="set6" type="submit" value="✖">'+
+            '<input id="set1" type="number" min="2000" max="2100" step="1"> 年 '+
+            '<input id="set2" type="number" min="1" max="12" step="1"> 月 '+
+            '<input id="set3" type="number" min="1" max="31" step="1" value="01"> 日　'+
+            '<input id="set4" type="number" min="0" max="23" step="1" value="00">'+
+            '：<input id="set5" type="number" min="0" max="59" step="1" value="00">　'+
+            '<input id="set6" type="submit" value="✖">'+
             '<style>'+
             '.date_in { position: absolute; top: '+ y_pos +'px; '+
             'left: calc(50% - 420px); z-index: 100; padding: 6px 12px; color: #000; '+
             'font: normal 16px/22px Meiryo; background: #6bc1cf; border: 1px solid #aaa; } '+
-            '.set0, .set1, .set2, .set3, .set4, .set5, .set6 { '+
+            '#set0, #set1, #set2, #set3, #set4, #set5, #set6 { '+
             'font: 16px Meiryo; padding: 2px 2px 0 2px; text-align: center; } '+
-            '.set0 { width: 64px; box-shadow: inset 0 0 0 80px #ffd54f; } '+
-            '.set0 .same { display: none; } .set0 .assign { display: inline; } '+
-            '.set0.same { box-shadow: inset 0 0 0 80px #add8df; } '+
-            '.set0.same .same { display: inline; } .set0.same .assign { display: none; } '+
-            '.set1 { width: 48px; } '+
-            '.set2, .set3, .set4, .set5 { width: 28px; } '+
-            '.date_in input[type=number]::-webkit-inner-spin-button { '+
+            '#set0 { width: 64px; box-shadow: inset 0 0 0 80px #ffd54f; } '+
+            '#set0 .same { display: none; } #set0 .assign { display: inline; } '+
+            '#set0.same { box-shadow: inset 0 0 0 80px #add8df; } '+
+            '#set0.same .same { display: inline; } #set0.same .assign { display: none; } '+
+            '#set1 { width: 48px; } '+
+            '#set2, #set3, #set4, #set5 { width: 28px; } '+
+            '.date_in input[type="number"]::-webkit-inner-spin-button { '+
             ' -webkit-appearance: none; margin: 0; } '+
-            '.date_in input[type=number] { -moz-appearance: textfield; appearance: textfield; } '+
-            '.set6 { padding: 2px 2px 0; } '+
+            '.date_in input[type="number"] { appearance: textfield; } '+
+            '.date_in input[type="number"]:hover { outline: 2px solid #1976d2; } '+
+            '#set6 { padding: 2px 2px 0; } '+
             '</style></div>';
 
         if(!document.querySelector('.date_in')){
@@ -478,13 +479,13 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
         let post_time;
 
-        let set0=document.querySelector('.set0');
-        let set1=document.querySelector('.set1');
-        let set2=document.querySelector('.set2');
-        let set3=document.querySelector('.set3');
-        let set4=document.querySelector('.set4');
-        let set5=document.querySelector('.set5');
-        let set6=document.querySelector('.set6');
+        let set0=document.querySelector('#set0');
+        let set1=document.querySelector('#set1');
+        let set2=document.querySelector('#set2');
+        let set3=document.querySelector('#set3');
+        let set4=document.querySelector('#set4');
+        let set5=document.querySelector('#set5');
+        let set6=document.querySelector('#set6');
 
         let nowPage=document.querySelector('input[name="nowPage"]');
         let page=nowPage.value;
@@ -536,6 +537,8 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
             localStorage.setItem('QE_Assign_date', assign_date); }
 
 
+        mouse_wheelset();
+
         set1.oninput=()=>{
             if(copy_mode==1){
                 save_assign(); }}
@@ -579,14 +582,11 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
                 copy_button[k].onmousedown=(event)=>{
                     if(fuse==1){ // 🟢
-                        if(copy_mode==0){
-                            post_time='?pageID='+ page +'&entry_ym='+
-                                set1.value + set2.value +'+'+
-                                set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value; }
-                        else if(copy_mode==1){
-                            post_time='?entry_ym='+
-                                set1.value + set2.value +'+'+
-                                set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value; }
+                        if(copy_mode==1){
+                            page='1'; }
+                        post_time='?pageID='+ page +'&entry_ym='+
+                            set1.value + set2.value +'+'+
+                            set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value;
 
                         sessionStorage.setItem('QE_post', post_time);
                     }}}, 500); }
@@ -609,6 +609,37 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
                 prosess_a[k].style.pointerEvents=''; }}}
 
 
+    function mouse_wheelset(){ // マウスホイールで設定可能にする
+        let input=document.querySelectorAll('.date_in input[type="number"]');
+        for(let k=0; k<input.length; k++){
+            input[k].addEventListener('wheel', function(event){
+                event.preventDefault(); // ページ全体のスクロールを防ぐ
+
+                if(event.deltaY<0){ // deltaYが負なら上方向（増加）、正なら下方向（減少）
+                    if(input[k].value/1<input[k].max/1){
+                        input[k].stepUp(); }}
+                else{
+                    if(input[k].value/1>input[k].min/1){
+                        input[k].stepDown(); }}
+
+                input[k].value=input[k].value.padStart(2, '0');
+                set_assign_date();
+
+            }, { passive: false }); }
+
+
+        function set_assign_date(){ // ホイール設定値をストレージに保存
+            let copy_mode=localStorage.getItem('QE_Copy_mode');
+            if(copy_mode==1){
+                let assign_date='';
+                let input=document.querySelectorAll('.date_in input[type="number"]');
+                for(let k=0; k<input.length; k++){
+                    assign_date+=input[k].value; }
+                localStorage.setItem('QE_Assign_date', assign_date); }}
+
+    } // mouse_wheelset()
+
+
 
     let qe_copy=sessionStorage.getItem('QE_copy');
     if(qe_copy){ // 複製操作で最新ページを開いた時に実行
@@ -618,53 +649,49 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
         let entry_id=document.querySelectorAll('input[name="entry_id"]');
         let entry_item=document.querySelectorAll('.entry-item');
-        let temp_id=0;
-        let index=-1;
-        for(let k=0; k<entry_id.length; k++){
-            if(temp_id<entry_id[k].value/1){
-                index=k;
-                temp_id=entry_id[k].value; }} // IDの最新記事を取得
 
-        if(entry_title[index].value.includes(title)){ // タイトルがコピー元と一致
+        let index=newest_index();
+        if(index!=-1 && entry_title[index].value.includes(title)){ // タイトルがコピー元と一致
             entry_item[index].style.outline='2px solid #2196f3'; // 複製した記事の青枠表示
 
             let dupe_id=entry_id[index].value;
             let post_time=sessionStorage.getItem('QE_post');
-            if(post_time){
+            if(post_time){ // 投稿日付を指定した複製の場合　再編集で開く
                 let edit_url='/ucs/entry/srventryupdateinput.do?id='+ dupe_id;
-                location.href=edit_url; }
-        }} // if(qe_copy)
-
+                location.href=edit_url; }}} // if(qe_copy)
     else{
         let post_time=sessionStorage.getItem('QE_post');
         if(post_time){
-            sessionStorage.removeItem('QE_post'); // 複製の最後にタイムスタンプフラグを削除
+            sessionStorage.removeItem('QE_post'); // 複製の post_timeフラグを削除（最終工程）
             let search=post_time.split('+')[0];
             search=search.substr(0, search.indexOf('ym=') + 9);
 
             let goto='https://blog.ameba.jp/ucs/entry/srventrylist.do'+ search;
-            location.href=goto; }
+            location.href=goto; } // post_time の複製指定先のリスト画面を開く
 
 
         let post_id=sessionStorage.getItem('QE_pid'); // 複製投稿の記事IDフラグがある場合
         if(post_id){
             setTimeout(()=>{
-                let post_index=-1;
-                let entry_item=document.querySelectorAll('.entry-item');
                 let entry_id=document.querySelectorAll('input[name="entry_id"]');
-                for(let k=0; k<entry_id.length; k++){
-                    if(entry_id[k].value==post_id){
-                        post_index=k;
-                        break; }}
-
-                if(post_index!=-1){
-                    entry_item[post_index].style.outline='2px solid #2196f3'; }
+                let entry_item=document.querySelectorAll('.entry-item');
+                let index=newest_index();
+                if(index!=-1 && entry_id[index].value==post_id){
+                    entry_item[index].style.outline='2px solid #2196f3'; }
 
                 sessionStorage.removeItem('QE_pid'); // 記事IDのフラグを削除
-            }, 400);
+            }, 400); }} // else
 
-        } // if(post_id)
-    } // else
+
+    function newest_index(){ // IDの最新記事のindexを取得
+        let entry_id=document.querySelectorAll('input[name="entry_id"]');
+        let temp_id=0;
+        let index=-1;
+        for(let k=0; k<entry_id.length; k++){
+            if(temp_id<entry_id[k].value/1){
+                index=k;
+                temp_id=entry_id[k].value; }}
+        return index; }
 
 
 
@@ -681,8 +708,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
                     backup(qe_panel); }
                 else{
                     p_open=0;
-                    qe_panel.style.display="none" }
-            }}}
+                    qe_panel.style.display="none" }}}}
 
 
     function backup(qe_panel){
@@ -812,67 +838,56 @@ function get_now(){ // 時刻比較のための現在時刻の整数化
 
 
 if(location.pathname.includes('draft')){ // 下書き保存確認画面の場合
-    //「記事の編集・削除を表示」ボタンを表示
-
-    let el_button=
-        '<div id="el_button">'+
-        '<svg viewBox="0 0 120 120">'+
-        '<path d="M0 0L0 112L112 112L112 0L0 0z" style="fill: #fff"></path>'+
-        '<path d="M23 21L45 21C48 21 52 20 55 22C60 26 56 34 64 36C70 38 '+
-        '78 37 84 37C88 37 92 37 94 40C97 43 96 48 96 52L96 81C100 81 103 '+
-        '80 105 76C107 73 106 69 106 65L106 43C106 39 106 35 104 31C101 27 '+
-        '96 27 92 27C84 27 76 27 68 27C68 22 68 17 65 14C61 10 55 11 50 11C39 '+
-        '11 26 8 23 21M52 43C52 40 52 38 51 35C48 25 35 27 27 27C21 27 13 26 '+
-        '9 32C6 37 7 43 7 48L7 82C7 87 6 94 10 97C15 101 22 100 28 100L69 '+
-        '100C74 100 81 101 86 98C90 95 90 91 90 86L90 58C90 53 90 48 86 '+
-        '45C83 43 79 43 75 43L52 43z" style="fill: #1976D2"></path>'+
-        '<path d="M80 53C72 52 65 52 57 52C54 52 49 53 47 52C40 48 44 39 '+
-        '38 37C34 36 21 35 18 39C16 42 17 45 17 48L17 69C17 74 15 85 18 '+
-        '89C21 92 28 91 32 91L67 91C71 91 77 92 80 89C82 86 81 81 81 78C81 '+
-        '70 81 61 80 53z" style="fill: #fff"></path></svg>'+
-        '記事の編集・削除を表示'+
-        '<style>'+
-        '#el_button { position: absolute; top: 100px; left: calc(50% + 200px); '+
-        'font: bold 16px Meiryo; white-space: nowrap; padding: 7px 20px 5px; '+
-        'border-radius: 6px; color: #1976D2; background: #fff; '+
-        'box-shadow: 5px 10px 30px #00000025; } '+
-        '#el_button:hover { background: #cfd8dc; } '+
-        '#el_button svg { width: 48px; height: 36px; vertical-align: -12px; } }'+
-        '</style></div>';
-
-    if(!document.querySelector('#el_button')){
-        document.body.insertAdjacentHTML('beforeend', el_button); }
-
-
-    let files_link=document.querySelector('#el_button');
-    if(files_link){
-        files_link.onclick=function(){
-            location.href="https://blog.ameba.jp/ucs/entry/srventrylist.do"; }}
-
-
 
     let post_time=sessionStorage.getItem('QE_post');
     if(post_time){ // 複製作業で下書き投稿をした場合
         sessionStorage.removeItem('QE_post'); // タイムスタンプフラグを削除
         setTimeout(()=>{
             window.close(); // 確認画面を閉じる
-        }, 1000);
-    }
+        }, 100); }
+    else{ //「記事の編集・削除を表示」ボタンを表示
+        disp_el_button(); }
+
+
+    function disp_el_button(){
+        let el_button=
+            '<div id="el_button">'+
+            '<svg viewBox="0 0 120 120">'+
+            '<path d="M0 0L0 112L112 112L112 0L0 0z" style="fill: #fff"></path>'+
+            '<path d="M23 21L45 21C48 21 52 20 55 22C60 26 56 34 64 36C70 38 '+
+            '78 37 84 37C88 37 92 37 94 40C97 43 96 48 96 52L96 81C100 81 103 '+
+            '80 105 76C107 73 106 69 106 65L106 43C106 39 106 35 104 31C101 27 '+
+            '96 27 92 27C84 27 76 27 68 27C68 22 68 17 65 14C61 10 55 11 50 11C39 '+
+            '11 26 8 23 21M52 43C52 40 52 38 51 35C48 25 35 27 27 27C21 27 13 26 '+
+            '9 32C6 37 7 43 7 48L7 82C7 87 6 94 10 97C15 101 22 100 28 100L69 '+
+            '100C74 100 81 101 86 98C90 95 90 91 90 86L90 58C90 53 90 48 86 '+
+            '45C83 43 79 43 75 43L52 43z" style="fill: #1976D2"></path>'+
+            '<path d="M80 53C72 52 65 52 57 52C54 52 49 53 47 52C40 48 44 39 '+
+            '38 37C34 36 21 35 18 39C16 42 17 45 17 48L17 69C17 74 15 85 18 '+
+            '89C21 92 28 91 32 91L67 91C71 91 77 92 80 89C82 86 81 81 81 78C81 '+
+            '70 81 61 80 53z" style="fill: #fff"></path></svg>'+
+            '記事の編集・削除を表示'+
+            '<style>'+
+            '#el_button { position: absolute; top: 100px; left: calc(50% + 200px); '+
+            'font: bold 16px Meiryo; white-space: nowrap; padding: 7px 20px 5px; '+
+            'border-radius: 6px; color: #1976D2; background: #fff; '+
+            'box-shadow: 5px 10px 30px #00000025; } '+
+            '#el_button:hover { background: #cfd8dc; } '+
+            '#el_button svg { width: 48px; height: 36px; vertical-align: -12px; } }'+
+            '</style></div>';
+
+        if(!document.querySelector('#el_button')){
+            document.body.insertAdjacentHTML('beforeend', el_button); }
+
+
+        let files_link=document.querySelector('#el_button');
+        if(files_link){
+            files_link.onclick=function(){
+                location.href="https://blog.ameba.jp/ucs/entry/srventrylist.do"; }}
+
+    } // disp_el_button()
 
 } // 下書き保存確認画面の場合
-
-
-
-
-if(location.pathname.includes('srventryupdateend.do')){ // 投稿確認画面の場合
-    let post_time=sessionStorage.getItem('QE_post');
-    if(post_time){
-        sessionStorage.removeItem('QE_post'); // タイムスタンプフラグを削除
-        setTimeout(()=>{
-            window.close(); // 確認画面を閉じる
-        }, 200);
-    }
-} // 投稿確認画面の場合
 
 
 
@@ -880,75 +895,71 @@ if(location.pathname.includes('srventryupdateend.do')){ // 投稿確認画面の
 if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場合（複製操作のみ）
     let post_time=sessionStorage.getItem('QE_post');
     if(post_time){
-        let c_ym=post_time.split('ym=')[1].substring(0, 4) +'-'+post_time.split('ym=')[1].substring(4, 6)
-        let c_day=post_time.split('月')[1].substring(0, 2);
-        let c_time=post_time.split('日')[1].substring(0, 6);
-        if(c_ym && c_day && c_time){
+
+        let sleep=(ms)=> new Promise(resolve=> setTimeout(resolve, ms));
+
+        async function runSequence(){
+            await task1();
+            await sleep(200); // 200ms待機
+            await task2();
+            await sleep(200);
+            await task3();
+            await sleep(200);
+            await task4(); }
+
+        runSequence();
+
+
+        function task1(){
+            let c_ym=post_time.split('ym=')[1].substring(0, 4) +'-'+post_time.split('ym=')[1].substring(4, 6)
+            let c_day=post_time.split('月')[1].substring(0, 2);
+            let c_time=post_time.split('日')[1].substring(0, 6);
+
             let new_post_time=c_ym +'-'+ c_day + c_time +':00';
 
             let entry_created_datetime=
                 document.querySelector('input[name="entry_created_datetime"]');
             if(entry_created_datetime){
-                entry_created_datetime.value=new_post_time; // コピー元の投稿日時を設定
+                entry_created_datetime.value=new_post_time; } // コピー元の投稿日時を設定
+
+            // 2017-07-31 02:00:00
 
 
-                let sleep=(ms)=> new Promise(resolve=> setTimeout(resolve, ms));
-
-                async function runSequence(){
-                    await task1();
-                    await sleep(200); // 200ms待機
-                    await task2();
-                    await sleep(200);
-                    await task3();
-                    await sleep(200);
-                    await task4(); }
-
-                runSequence();
+            let p_title=document.querySelector('input[name="entry_title"]');
+            if(p_title){
+                let title_tx=p_title.value;
+                p_title.value=title_tx.replace('【複製】', '©'); } // 記事タイトル先頭に「©」を追加
 
 
-                function task1(){
-                    let calendar=document.querySelector('#js-calendarClickBox');
-                    if(calendar){
-                        calendar.disabled=true;
-                        let stamp=calendar.querySelector('#js-entryDatePreview');
-                        if(stamp){
-                            stamp.textContent=new_post_time; }} // 投稿日時の設定枠を書換え
-
-                    let p_title=document.querySelector('input[name="entry_title"]');
-                    if(p_title){
-                        let title_tx=p_title.value;
-                        p_title.value=title_tx.replace('【複製】', '©'); } // 記事タイトル先頭に「©」を追加
-
-                    let entry_id=document.querySelector('input[name="entry_id"]');
-                    if(entry_id){
-                        let post_id=entry_id.value;
-                        sessionStorage.setItem('QE_pid', post_id); } // 投稿記事のIDを記録
-                } // task1()
+            let entry_id=document.querySelector('input[name="entry_id"]');
+            if(entry_id){
+                let post_id=entry_id.value;
+                sessionStorage.setItem('QE_pid', post_id); } // 投稿記事のIDを記録
+        } // task1()
 
 
-                function task2(){
-                    let publish_b1=document.querySelector('button.js-submitButton[publishflg="1"]');
-                    if(publish_b1){
-                        let mevent=new MouseEvent('mousedown', {
-                            bubbles: true,
-                            cancelable: true, });
-                        publish_b1.dispatchEvent(mevent); // SP Coutionの離脱防止をキャンセル
-                        publish_b1.click(); // 下書き保存
-                    }} // task2()
+        function task2(){
+            let publish_b1=document.querySelector('button.js-submitButton[publishflg="1"]');
+            if(publish_b1){
+                let mevent=new MouseEvent('mousedown', {
+                    bubbles: true,
+                    cancelable: true, });
+                publish_b1.dispatchEvent(mevent); // SP Coutionの離脱防止をキャンセル
+                publish_b1.click(); // 下書き保存
+            }} // task2()
 
 
-                function task3(){
-                    let prev_url=document.referrer;
-                    if(prev_url){
-                        window.open(prev_url, '_blank'); // 記事の編集・削除を別タブに開く
-                    }} // task3()
+        function task3(){
+            let prev_url=document.referrer;
+            if(prev_url){
+                window.open(prev_url, '_blank'); // 記事の編集・削除を別タブに開く
+            }} // task3()
 
 
-                function task4(){
-                    window.close();
-                } // task4()
+        function task4(){
+            window.close();
+        } // task4()
 
-            } // if(entry_created_datetime)
-        }} // if(post_time)
+    } // if(post_time)
 
 } // 編集画面の場合
