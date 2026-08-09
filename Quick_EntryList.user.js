@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        2.8
+// @version        2.9
 // @description        記事の編集・削除の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -191,20 +191,16 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
     function disp_button(n){
         let button=document.querySelector('#qe_b'+n);
         if(button){
-            let date_raw;
             let ny;
             let nm;
-            if(qe_ym[n].indexOf("&so=")!=-1){ // 古い順表示の場合
-                date_raw=qe_ym[n].substring(0, qe_ym[n].indexOf("&so=")); }
-            else{
-                date_raw=qe_ym[n]; }
-
-            ny=date_raw.slice(-6, -2);
-            nm=date_raw.slice(-2);
-            if((ny>1999 && ny<2100) && (nm>0 && nm<13)){
-                button.textContent=ny+'-'+nm; }
+            let date_raw=qe_ym[n].split('ym=')[1];
+            if(date_raw){
+                ny=date_raw.substring(0, 4);
+                nm=date_raw.substring(4, 6);
+                if((ny>1999 && ny<2100) && (nm>0 && nm<13)){
+                    button.textContent=ny+'-'+nm; }}
             else{ // 未登録の場合
-                button.textContent='┄┄┄'; }}}
+                    button.textContent='-----'; }}}
 
 
 
@@ -240,7 +236,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         let input_year=document.querySelector('input[name="urlParam"]');
         if(input_year){
             query=input_year.value;
-            page_year=query.slice(-6, -2); }
+            page_year=query.split('ym=')[1].substring(0, 4); }
 
         if(!page_year){
             let currentTime=new Date();
@@ -269,23 +265,11 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
                 else{
                     if(!event.shiftKey){ // ページを登録
-                        let date_raw;
-                        let ny;
-                        let nm;
                         let current_search; // 現在のクエリー文字列
-
-                        if(!location.search){ //「記事の編集・削除」の初期表示の場合
-                            let currentTime=new Date();
-                            ny=currentTime.getFullYear();
-                            nm=('0'+(currentTime.getMonth()+1)).slice(-2); }
-
-                        else{
-                            if(location.search.indexOf("&so=")!=-1){ // 古い順表示の場合
-                                date_raw=location.search.substring(0, location.search.indexOf("&so=")); }
-                            else{
-                                date_raw=location.search; }
-                            ny=date_raw.slice(-6, -2);
-                            nm=date_raw.slice(-2); }
+                        let urlParam=document.querySelector('input[name="urlParam"]');
+                        let param=urlParam.value;
+                        let ny=param.substring(9, 13);
+                        let nm=param.substring(13, 15);
 
                         if((ny>1999 && ny<2100) && (nm>0 && nm<13)){
                             let ok=confirm(
@@ -416,11 +400,14 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
     let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
     for(let k=0; k<copy_button.length; k++){
         copy_button[k].onmouseup=(event)=>{
-            if(event.ctrlKey){ //「複製」を「Ctrl+Click」でタイムスタンプをセット 🟠
-                let li_item=copy_button[k].closest('.entry-item');
-                let y_pos=li_item.getBoundingClientRect().top + window.scrollY - 45;
-                panel_copy(y_pos, k); }
-            else{
+            if(event.ctrlKey){ //「Ctrl + Click」で「複製パネル」を使った複製 🟠
+                let entry_item=copy_button[k].closest('.entry-item');
+                let rect=entry_item.getBoundingClientRect();
+                let y_pos=rect.top + window.scrollY - 42;
+                let x_pos=rect.left - 2;
+                panel_item(1, k);
+                panel_copy(y_pos, x_pos, k); }
+            else{ // 通常の複製
                 let title=entry_title[k].value;
                 title=title.substring(0, 10); // タイトルの先頭10文字
                 sessionStorage.setItem('QE_copy', title); }
@@ -428,8 +415,30 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         }} // for()
 
 
-    function panel_copy(y_pos, k){
-        safe(1);
+    function panel_item(n, k){
+        let entry_item=document.querySelectorAll('.entry-item');
+        let prosess_b=entry_item[k].querySelector('button.process');
+        if(prosess_b){
+            if(n==1){
+                for(let i=0; i<entry_item.length; i++){
+                    entry_item[i].style.outline='';
+                    entry_item[i].style.pointerEvents='none'; }
+                entry_item[k].style.outline='2px solid #6bc1cf';
+                entry_item[k].style.background='#e2eef0';
+                prosess_b.disabled=true;
+                prosess_b.style.pointerEvents='auto'; }
+            else{
+                entry_item[k].style.outline='';
+                entry_item[k].style.background='';
+                prosess_b.disabled=false;
+                prosess_b.style.pointerEvents='';
+                setTimeout(()=>{
+                    for(let i=0; i<entry_item.length; i++){
+                        entry_item[i].style.pointerEvents=''; }
+                }, 600); }}}
+
+
+    function panel_copy(y_pos, x_pos, k){
         fuse=1; // 🟢
 
         let copy_mode=localStorage.getItem('QE_Copy_mode'); // ローカルストレージ 保存名
@@ -455,9 +464,9 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
             '：<input id="set5" type="number" min="0" max="59" step="1" value="00">　'+
             '<input id="set6" type="submit" value="✖">'+
             '<style>'+
-            '.date_in { position: absolute; top: '+ y_pos +'px; '+
-            'left: calc(50% - 420px); z-index: 100; padding: 6px 12px; color: #000; '+
-            'font: normal 16px/22px Meiryo; background: #6bc1cf; border: 1px solid #aaa; } '+
+            '.date_in { position: absolute; top: '+ y_pos +'px; left: '+ x_pos +'px; '+
+            'z-index: 100; padding: 6px 12px; white-space: nowrap; '+
+            'color: #000; font: normal 16px/22px Meiryo; background: #6bc1cf; } '+
             '#set0, #set1, #set2, #set3, #set4, #set5, #set6 { '+
             'font: 16px Meiryo; padding: 2px 2px 0 2px; text-align: center; } '+
             '#set0 { width: 64px; box-shadow: inset 0 0 0 80px #ffd54f; } '+
@@ -519,7 +528,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
         function get_posted_time(param, date){
             set1.value=param.substring(9, 13);
-            set2.value=param.slice(-2);
+            set2.value=date.substring(0, 2);
             set3.value=date.substring(3, 5);
             set4.value=date.substring(7, 9);
             set5.value=date.substring(10, 12); }
@@ -565,12 +574,12 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
 
         set6.onclick=()=>{
-            document.querySelector('.date_in').remove();
-            safe(0);
             fuse=0; // 🟢
+            document.querySelector('.date_in').remove();
             let sw=copy_button[k].closest('.action');
             if(sw){
-                sw.style.boxShadow=''; }}
+                sw.style.boxShadow=''; }
+            panel_item(0, k); }
 
 
         if(document.querySelector('.date_in')){
@@ -593,20 +602,6 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
     } // panel_copy()
 
-
-    function safe(n){
-        let prosess_b=document.querySelectorAll('button.process');
-        let prosess_a=document.querySelectorAll('a.process');
-        if(n==1){
-            for(let k=0; k<prosess_b.length; k++){
-                prosess_b[k].disabled=true; }
-            for(let k=0; k<prosess_a.length; k++){
-                prosess_a[k].style.pointerEvents='none'; }}
-        else{
-            for(let k=0; k<prosess_b.length; k++){
-                prosess_b[k].disabled=false; }
-            for(let k=0; k<prosess_a.length; k++){
-                prosess_a[k].style.pointerEvents=''; }}}
 
 
     function mouse_wheelset(){ // マウスホイールで設定可能にする
@@ -825,7 +820,8 @@ function get_now(){ // 時刻比較のための現在時刻の整数化
     let minute=currentDate.getMinutes();
 
     function formatTime(val) {
-        return ("0" + val).slice(-2); } //「0」付きで2桁テキストに変更
+        let date_text=val.toString();
+        return date_text.padStart(2, '0'); } //「0」付きで2桁テキストに変更
 
     let now=year + formatTime(month) + formatTime(date) +
         formatTime(hour) + formatTime(minute);
