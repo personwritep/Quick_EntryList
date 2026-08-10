@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        2.9
-// @description        記事の編集・削除の機能拡張
+// @version        3.0
+// @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
 // @match        https://blog.ameba.jp/ucs/entry/srventry*draft*
@@ -16,7 +16,7 @@
 // ==/UserScript==
 
 
-if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の場合
+if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
     let UserID; // アメーバログインID
 
@@ -44,14 +44,14 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
     let read_json=localStorage.getItem('QE_Point_'+UserID); // ローカルストレージ 保存名
     qe_ym=JSON.parse(read_json);
-    if(qe_ym==null){
-        let old_read_json=localStorage.getItem('QE_Point'); // 旧ローカルストレージ 保存名
-        qe_ym=JSON.parse(old_read_json);
-        if(qe_ym==null){ // 新旧ともにストレージ保存がない場合
-            qe_ym=['', '?', '?', '?', '?', '?', '?']; }}
+    if(qe_ym==null){ // ストレージ保存がない場合
+        qe_ym=['', '?', '?', '?', '?', '?', '?', '', '', '', '', '', '']; }
 
-    for(let k=qe_ym.length+1; k<8; k++){ // 配列数が旧く少ない場合 7個に増す
-        qe_ym.push('?'); }
+    for(let k=qe_ym.length+1; k<14; k++){ // 配列数が少ないバージョンの場合 13個に増す
+        if(k<7){
+            qe_ym.push('?'); }
+        if(k>=7){
+            qe_ym.push(''); }}
 
     let write_json=JSON.stringify(qe_ym);
     localStorage.setItem('QE_Point_'+UserID, write_json); // ローカルストレージ 保存
@@ -73,7 +73,18 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
     let disp_qe=
         '<div id="disp_qe">'+
-        '<span class="qe_s">表示年月：</span>'+
+
+        '<div class="qe_s">表示年月：'+
+        '<div class="qe_help">'+
+        '<div class="qe_help_d d1">'+
+        '<p>ファイルメニュー</p>'+
+        '<p>　　Alt+Click ▼ </p>'+
+        '</div>'+
+        '<div class="qe_help_d">'+
+        '<p>　 Ctrl+Click：現在の表示年月を登録　Ctrl+Shift+Click：登録を削除</p>'+
+        '<p>▼ Click：登録ページを表示</p>'+
+        '</div></div></div>'+
+
         '<button class="qe_button" id="qe_b1"></button>'+
         '<button class="qe_button" id="qe_b2"></button>'+
         '<button class="qe_button" id="qe_b3"></button>'+
@@ -82,19 +93,6 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         '<button class="qe_button" id="qe_b6"></button>'+
         '<button class="qe_button" id="qe_top">Top</button>'+
         '<a href="'+ help_url +'" target="_blank" rel="noopener">'+ help_SVG +'</a>'+
-
-        '<div class="qe_help">'+
-
-        '<div class="qe_help_d d1">'+
-        '<p>ファイルメニュー</p>'+
-        '<p>　　Alt+Click ▼ </p>'+
-        '</div>'+
-
-        '<div class="qe_help_d">'+
-        '<p>　 Ctrl+Click：現在の表示年月を登録　　Ctrl+Shift+Click：登録を削除　</p>'+
-        '<p>▼ Click：登録ページを表示</p>'+
-        '</div></div>'+
-
         '</div>'+
 
         '<div id="qe_panel">'+
@@ -102,12 +100,18 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         '<button class="read_button">ファイルから読込み</button>'+
         '<input type="file" class="read_file">'+
         '<button class="close">✖</button>'+
+        '</div>'+
+
+        '<div id=label_panel>'+
+        '<span> 登録ページのラベル：</span>'+
+        '<input type="text" id="lavel_box" maxlength="20">'+
+        '<button class="close_l">✖</button>'+
         '</div>';
+
 
     let Main_h1=document.querySelector('#ucsMainLeft h1');
     if(!document.querySelector('#disp_qe') && Main_h1){
         Main_h1.insertAdjacentHTML('beforeend', disp_qe); }
-
 
 
     let ym_select=
@@ -118,28 +122,35 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         entrySort.insertAdjacentHTML('beforeend', ym_select); }
 
 
-
     let qe_style=
         '<style id="qe_style">'+
-        '#disp_qe { float: right; margin-top: -2px; background: #fff; position: relative; } '+
-        '.qe_s { position: relative; font: normal 14px Meiryo; cursor: default; } '+
-        '.qe_button { height: 25px; max-width: 72px; font-size: 15px; '+
-        'margin: 0 3px; padding: 2px 6px; border: 1px solid #aaa; border-radius: 3px; '+
-        'background: #fff; vertical-align: -1px; cursor: pointer; } '+
+        '#ucsMainLeft h1 { display: flex; justify-content: space-between; } '+
+        '#disp_qe { display: flex; align-items: center; background: #fff; position: relative; '+
+        'margin-left: -100px; } '+
+        '.qe_s { position: relative; font: normal 14px Meiryo; cursor: default; padding-left: 10px; } '+
+        '.qe_button { font: normal 14px Meiryo; height: 25px; max-width: 72px; '+
+        'margin: 0 3px 2px; padding: 2px 4px; border: 1px solid #aaa; border-radius: 3px; '+
+        'background: #fff; cursor: pointer; } '+
         '.qe_button:hover { outline: 1px solid #2196f3; } '+
-        '.qe_h { vertical-align: -6px; } '+
-
-        '.qe_help { position: absolute; top: -46px; left: -67px; z-index: 10; '+
-        'font: normal 14px/18px Meiryo; display: none; } '+
-        '.qe_help_d { padding: 4px 8px 1px; border: 1px solid #aaa; background: #fff; } '+
+        '.qe_h { vertical-align: -4px; } '+
+        '.qe_help { position: absolute; top: -50px; left: -65px; z-index: 10; display: none; '+
+        'font: normal 14px/18px Meiryo; background: #fff; box-shadow: 0 -2px 2px 3px #fff; } '+
+        '.qe_help_d { padding: 4px 12px 1px; border: 1px solid #aaa; background: #fff; } '+
         '.qe_help_d.d1 { margin-right: 10px; } '+
         '.qe_help_d p { white-space: nowrap; } '+
-        '#qe_panel { position: fixed; top: 0; right: calc(50% - 340px); z-index: 20; '+
-        'padding: 6px 10px 8px 25px; background: #b0bec5; display: none; } '+
-        '#qe_panel button { font: 14px Meiryo; padding: 2px 6px 0; margin-right: 15px; } '+
-        '#qe_panel .read_file { display: none; } '+
+        '.qe_s:hover .qe_help { display: flex; } '+
 
-        '#entrySort { display: flex; position: relative; overflow: visible; z-index: 3; } '+
+        '#qe_panel, #label_panel { position: fixed; top: 0; right: calc(50% - 340px); z-index: 20; '+
+        'padding: 6px 10px 7px 25px; background: #b0bec5; display: none; } '+
+        '#qe_panel button, #label_panel button { '+
+        'font: 14px Meiryo; padding: 2px 6px 0; margin-right: 15px; } '+
+        '#qe_panel .read_file { display: none; } '+
+        '#label_panel span { font: normal 14px/20px Meiryo; padding-top: 6px; } '+
+        '#lavel_box { font: normal 14px/21px Meiryo; padding: 2px 6px 0; margin: 1px 2px 0 0; '+
+        'width: 160px; } '+
+
+        '#entrySort { display: flex; position: relative; overflow: visible; z-index: 3; '+
+        'min-width: 600px; } '+
         '#entryYear { display: flex; justify-content: space-between; '+
         'align-items: center; width: 120px; margin: 0 5px; } '+
         '#yearText { position: absolute; top: 6px; left: 84px; width: 16px; '+
@@ -180,7 +191,6 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
     point_set(6);
     point_top();
 
-    disp_help();
     scheduled();
     weekend();
     to_ucstop();
@@ -200,7 +210,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
                 if((ny>1999 && ny<2100) && (nm>0 && nm<13)){
                     button.textContent=ny+'-'+nm; }}
             else{ // 未登録の場合
-                    button.textContent='-----'; }}}
+                button.textContent='-----'; }}}
 
 
 
@@ -259,49 +269,76 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
         let point_button=document.querySelector('#qe_b'+n);
         if(point_button){
             point_button.onclick=function(event){
-                if(!event.ctrlKey){ // 登録ページの表示
+                if(!event.ctrlKey && !event.altKey){ // 登録ページの表示
                     location.href=
                         "https://blog.ameba.jp/ucs/entry/srventrylist.do"+ qe_ym[n]; }
 
-                else{
-                    if(!event.shiftKey){ // ページを登録
-                        let current_search; // 現在のクエリー文字列
-                        let urlParam=document.querySelector('input[name="urlParam"]');
-                        let param=urlParam.value;
-                        let ny=param.substring(9, 13);
-                        let nm=param.substring(13, 15);
+                else if(event.ctrlKey && !event.shiftKey){ // ページを登録
+                    let current_search; // 現在のクエリー文字列
+                    let urlParam=document.querySelector('input[name="urlParam"]');
+                    let param=urlParam.value;
+                    let ny=param.substring(9, 13);
+                    let nm=param.substring(13, 15);
 
-                        if((ny>1999 && ny<2100) && (nm>0 && nm<13)){
-                            let ok=confirm(
-                                "　💢 Quick指定年月の登録を変更します\n\n"+
-                                "　「OK」を押すと現在選択している "+ny+"年 "+nm+"月 を登録します" );
-                            if(ok){
-                                current_search=location.search;
-                                if(!current_search){
-                                    current_search='?entry_ym='+ny+nm; }
-                                qe_ym[n]=current_search;
-                                let write_json=JSON.stringify(qe_ym); // ローカルストレージ 保存
-                                localStorage.setItem('QE_Point_'+UserID, write_json);
-                                disp_button(n); }}
-
-                        else{ // クエリーの値が不正値の場合
-                            let ok=confirm(
-                                "　💢 クエリー文字列が異常値で登録できません\n\n"+
-                                "　「OK」を押すと先頭ページに移動します" );
-                            if(ok){
-                                location.href=
-                                    "https://blog.ameba.jp/ucs/entry/srventrylist.do"; }}}
-
-                    else{ //「Ctrl+Shift」で登録削除
+                    if((ny>1999 && ny<2100) && (nm>0 && nm<13)){
                         let ok=confirm(
-                            "　💢 選択した指定年月の登録を削除します\n" );
+                            "　💢 Quick指定年月の登録を変更します\n\n"+
+                            "　「OK」を押すと現在選択している "+ny+"年 "+nm+"月 を登録します" );
                         if(ok){
-                            qe_ym[n]='?';
+                            current_search=location.search;
+                            if(!current_search){
+                                current_search='?entry_ym='+ny+nm; }
+                            qe_ym[n]=current_search;
                             let write_json=JSON.stringify(qe_ym); // ローカルストレージ 保存
                             localStorage.setItem('QE_Point_'+UserID, write_json);
-                            disp_button(n); }}}
+                            disp_button(n); }}
 
-            }}} // point_set()
+                    else{ // クエリーの値が不正値の場合
+                        let ok=confirm(
+                            "　💢 クエリー文字列が異常値で登録できません\n\n"+
+                            "　「OK」を押すと先頭ページに移動します" );
+                        if(ok){
+                            location.href=
+                                "https://blog.ameba.jp/ucs/entry/srventrylist.do"; }}}
+
+                else if(event.ctrlKey && event.shiftKey){ //「Ctrl+Shift」で登録削除
+                    let ok=confirm(
+                        "　💢 選択した指定年月の登録を削除します\n" );
+                    if(ok){
+                        qe_ym[n]='?';
+                        let write_json=JSON.stringify(qe_ym); // ローカルストレージ 保存
+                        localStorage.setItem('QE_Point_'+UserID, write_json);
+                        disp_button(n); }}
+
+                else if(event.altKey){
+                    set_label(n); }
+
+            } // point_button.onclick
+        }} // point_set()
+
+
+
+    function set_label(n){
+        let label_panel=document.querySelector('#label_panel');
+        if(label_panel){
+            label_panel.style.display='block';
+
+            let box=label_panel.querySelector('#lavel_box');
+            if(box){
+                box.value=qe_ym[n+6]; }
+
+            box.onchange=()=>{
+                qe_ym[n+6]=box.value;
+                let write_json=JSON.stringify(qe_ym);
+                localStorage.setItem('QE_Point_'+UserID, write_json); } // ローカルストレージ 保存
+
+
+            let close_l=document.querySelector('.close_l');
+            if(close_l && label_panel){
+                close_l.onclick=()=>{
+                    label_panel.style.display='none'; }}
+
+        }} // set_label()
 
 
 
@@ -311,18 +348,6 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
             point_top.onclick=function(event){
                 location.href=
                     "https://blog.ameba.jp/ucs/entry/srventrylist.do"; }}}
-
-
-
-    function disp_help(){
-        let qe_s=document.querySelector('#disp_qe .qe_s');
-        let qe_help=document.querySelector('#disp_qe .qe_help');
-        if(qe_s && qe_help){
-            qe_s.addEventListener('mouseover', function(){
-                qe_help.style.display='flex'; });
-
-            qe_s.addEventListener('mouseleave', function(){
-                qe_help.style.display='none'; }); }}
 
 
 
@@ -754,7 +779,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集・削除の�
 
     } // backup()
 
-} // 記事の編集・削除の場合
+} // 記事の編集の場合
 
 
 
@@ -841,7 +866,7 @@ if(location.pathname.includes('draft')){ // 下書き保存確認画面の場合
         setTimeout(()=>{
             window.close(); // 確認画面を閉じる
         }, 100); }
-    else{ //「記事の編集・削除を表示」ボタンを表示
+    else{ //「記事の編集を表示」ボタンを表示
         disp_el_button(); }
 
 
@@ -862,9 +887,9 @@ if(location.pathname.includes('draft')){ // 下書き保存確認画面の場合
             '38 37C34 36 21 35 18 39C16 42 17 45 17 48L17 69C17 74 15 85 18 '+
             '89C21 92 28 91 32 91L67 91C71 91 77 92 80 89C82 86 81 81 81 78C81 '+
             '70 81 61 80 53z" style="fill: #fff"></path></svg>'+
-            '記事の編集・削除を表示'+
+            '記事の編集を表示'+
             '<style>'+
-            '#el_button { position: absolute; top: 100px; left: calc(50% + 200px); '+
+            '#el_button { position: absolute; top: 100px; left: calc(50% + 248px); '+
             'font: bold 16px Meiryo; white-space: nowrap; padding: 7px 20px 5px; '+
             'border-radius: 6px; color: #1976D2; background: #fff; '+
             'box-shadow: 5px 10px 30px #00000025; } '+
@@ -948,7 +973,7 @@ if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場�
         function task3(){
             let prev_url=document.referrer;
             if(prev_url){
-                window.open(prev_url, '_blank'); // 記事の編集・削除を別タブに開く
+                window.open(prev_url, '_blank'); // 記事の編集を別タブに開く
             }} // task3()
 
 
