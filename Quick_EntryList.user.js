@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        3.0
+// @version        3.1
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -59,7 +59,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
     let help_SVG=
-        '<svg class="qe_h" height="20" width="24" viewBox="0 0 210 220">'+
+        '<svg class="qe_h" viewBox="0 0 210 220">'+
         '<path d="M89 22C71 25 54 33 41 46C7 81 11 142 50 171C58 177 '+
         '68 182 78 185C90 188 103 189 115 187C126 185 137 181 146 175'+
         'C155 169 163 162 169 153C190 123 189 80 166 52C147 30 118 18'+
@@ -82,15 +82,21 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         '</div>'+
         '<div class="qe_help_d">'+
         '<p>　 Ctrl+Click：現在の表示年月を登録　Ctrl+Shift+Click：登録を削除</p>'+
-        '<p>▼ Click：登録ページを表示</p>'+
+        '<p>▼ Click：登録ページを表示　　　　　Alt+Click：ボタンのラベル編集</p>'+
         '</div></div></div>'+
 
-        '<button class="qe_button" id="qe_b1"></button>'+
-        '<button class="qe_button" id="qe_b2"></button>'+
-        '<button class="qe_button" id="qe_b3"></button>'+
-        '<button class="qe_button" id="qe_b4"></button>'+
-        '<button class="qe_button" id="qe_b5"></button>'+
-        '<button class="qe_button" id="qe_b6"></button>'+
+        '<button class="qe_button" id="qe_1">'+
+        '<span class="tip"></span><span class="label"></span></button>'+
+        '<button class="qe_button" id="qe_2">'+
+        '<span class="tip"></span><span class="label"></span></button>'+
+        '<button class="qe_button" id="qe_3">'+
+        '<span class="tip"></span><span class="label"></span></button>'+
+        '<button class="qe_button" id="qe_4">'+
+        '<span class="tip"></span><span class="label"></span></button>'+
+        '<button class="qe_button" id="qe_5">'+
+        '<span class="tip"></span><span class="label"></span></button>'+
+        '<button class="qe_button" id="qe_6">'+
+        '<span class="tip"></span><span class="label"></span></button>'+
         '<button class="qe_button" id="qe_top">Top</button>'+
         '<a href="'+ help_url +'" target="_blank" rel="noopener">'+ help_SVG +'</a>'+
         '</div>'+
@@ -102,7 +108,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         '<button class="close">✖</button>'+
         '</div>'+
 
-        '<div id=label_panel>'+
+        '<div id=lb_panel>'+
         '<span> 登録ページのラベル：</span>'+
         '<input type="text" id="lavel_box" maxlength="20">'+
         '<button class="close_l">✖</button>'+
@@ -127,12 +133,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         '#ucsMainLeft h1 { display: flex; justify-content: space-between; } '+
         '#disp_qe { display: flex; align-items: center; background: #fff; position: relative; '+
         'margin-left: -100px; } '+
-        '.qe_s { position: relative; font: normal 14px Meiryo; cursor: default; padding-left: 10px; } '+
-        '.qe_button { font: normal 14px Meiryo; height: 25px; max-width: 72px; '+
-        'margin: 0 3px 2px; padding: 2px 4px; border: 1px solid #aaa; border-radius: 3px; '+
-        'background: #fff; cursor: pointer; } '+
-        '.qe_button:hover { outline: 1px solid #2196f3; } '+
-        '.qe_h { vertical-align: -4px; } '+
+        '.qe_s { position: relative; font: normal 14px Meiryo; padding-left: 10px; cursor: default; } '+
         '.qe_help { position: absolute; top: -50px; left: -65px; z-index: 10; display: none; '+
         'font: normal 14px/18px Meiryo; background: #fff; box-shadow: 0 -2px 2px 3px #fff; } '+
         '.qe_help_d { padding: 4px 12px 1px; border: 1px solid #aaa; background: #fff; } '+
@@ -140,12 +141,24 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         '.qe_help_d p { white-space: nowrap; } '+
         '.qe_s:hover .qe_help { display: flex; } '+
 
-        '#qe_panel, #label_panel { position: fixed; top: 0; right: calc(50% - 340px); z-index: 20; '+
+        '.qe_button { position: relative; font: normal 14px/20px Meiryo; '+
+        'height: 24px; max-width: 72px; margin: 0 3px 2px; padding: 2px 4px; '+
+        'border: 1px solid #aaa; border-radius: 3px; background: #fff; cursor: pointer; } '+
+        '.qe_button .tip { position: absolute; top: -26px; left: -2px; white-space: nowrap; '+
+        'font: normal 14px/16px Meiryo; padding: 3px 4px 1px; '+
+        'color: #fff; background: #0076dd; outline: 1px solid #fff; '+
+        'opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0.5s ease; } '+
+        '.qe_button:hover { outline: 1px solid #2196f3; } '+
+        '.qe_button:hover .tip { opacity: 1; visibility: visible; } '+
+
+        '.qe_h { height: 20px; width: 24px; vertical-align: -4px; } '+
+
+        '#qe_panel, #lb_panel { position: fixed; top: 0; right: calc(50% - 340px); z-index: 20; '+
         'padding: 6px 10px 7px 25px; background: #b0bec5; display: none; } '+
-        '#qe_panel button, #label_panel button { '+
+        '#qe_panel button, #lb_panel button { '+
         'font: 14px Meiryo; padding: 2px 6px 0; margin-right: 15px; } '+
         '#qe_panel .read_file { display: none; } '+
-        '#label_panel span { font: normal 14px/20px Meiryo; padding-top: 6px; } '+
+        '#lb_panel span { font: normal 14px/20px Meiryo; padding-top: 6px; } '+
         '#lavel_box { font: normal 14px/21px Meiryo; padding: 2px 6px 0; margin: 1px 2px 0 0; '+
         'width: 160px; } '+
 
@@ -176,20 +189,14 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
-    for(let k=1; k<7; k++){
-        disp_button(k)}
-
-
-    set_year_list();
     disp_select();
     select_year();
-    point_set(1);
-    point_set(2);
-    point_set(3);
-    point_set(4);
-    point_set(5);
-    point_set(6);
+
     point_top();
+    for(let k=1; k<7; k++){
+        disp_button(k);
+        set_tip(k);
+        point_set(k); }
 
     scheduled();
     weekend();
@@ -198,60 +205,18 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
-    function disp_button(n){
-        let button=document.querySelector('#qe_b'+n);
-        if(button){
-            let ny;
-            let nm;
-            let date_raw=qe_ym[n].split('ym=')[1];
-            if(date_raw){
-                ny=date_raw.substring(0, 4);
-                nm=date_raw.substring(4, 6);
-                if((ny>1999 && ny<2100) && (nm>0 && nm<13)){
-                    button.textContent=ny+'-'+nm; }}
-            else{ // 未登録の場合
-                button.textContent='-----'; }}}
+    function disp_select(){
+        let page_year;
+        let input_year=document.querySelector('input[name="urlParam"]');
+        if(input_year){
+            let query=input_year.value;
+            page_year=query.split('ym=')[1].substring(0, 4); }
 
-
-
-    function select_year(){
-        let set_year;
-        let ym_select_box=document.querySelector('#ym_select_box');
-        if(ym_select_box){
-            ym_select_box.onchange=function(){
-                set_year=ym_select_box.options[ym_select_box.selectedIndex].value;
-                location.href=
-                    "https://blog.ameba.jp/ucs/entry/srventrylist.do?entry_ym="+
-                    set_year +"01"; }
-
-            ym_select_box.onblur=function(){
-                setTimeout(()=>{
-                    ym_select_box.value=ym_select_box.value;
-                }, 20 ); }}}
-
-
-
-    function set_year_list(){
         let currentTime=new Date();
         let year=currentTime.getFullYear();
         for(let k=2000; k<year+2; k++){
             year_list.push(k); }
-        year_list.reverse(); }
-
-
-
-    function disp_select(){
-        let page_year;
-        let query;
-        let input_year=document.querySelector('input[name="urlParam"]');
-        if(input_year){
-            query=input_year.value;
-            page_year=query.split('ym=')[1].substring(0, 4); }
-
-        if(!page_year){
-            let currentTime=new Date();
-            let current_year=currentTime.getFullYear();
-            page_year=current_year; }
+        year_list.reverse();
 
         let ym_select_box=document.querySelector('#ym_select_box');
         if(ym_select_box){
@@ -265,8 +230,56 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
+    function select_year(){
+        let set_year;
+        let ym_select_box=document.querySelector('#ym_select_box');
+        if(ym_select_box){
+            ym_select_box.onchange=function(){
+                set_year=ym_select_box.options[ym_select_box.selectedIndex].value;
+                location.href=
+                    "https://blog.ameba.jp/ucs/entry/srventrylist.do?entry_ym="+
+                    set_year +"01"; }}}
+
+
+
+    function point_top(){
+        let point_top=document.querySelector('#qe_top');
+        if(point_top){
+            point_top.onclick=function(event){
+                location.href=
+                    "https://blog.ameba.jp/ucs/entry/srventrylist.do"; }}}
+
+
+
+    function disp_button(n){
+        let button_label=document.querySelector('#qe_'+n+' .label');
+        if(button_label){
+            let ny;
+            let nm;
+            let date_raw=qe_ym[n].split('ym=')[1];
+            if(date_raw){
+                ny=date_raw.substring(0, 4);
+                nm=date_raw.substring(4, 6);
+                if((ny>1999 && ny<2100) && (nm>0 && nm<13)){
+                    button_label.textContent=ny+'-'+nm; }}
+            else{ // 未登録の場合
+                button_label.textContent='-----'; }}}
+
+
+
+    function set_tip(n){
+        let tip=document.querySelector('#qe_'+n+' .tip');
+        if(tip){
+            tip.textContent=qe_ym[n+6];
+            if(qe_ym[n+6].length==0){
+                tip.style.display='none'; }
+            else{
+                tip.style.display='inline'; }}}
+
+
+
     function point_set(n){
-        let point_button=document.querySelector('#qe_b'+n);
+        let point_button=document.querySelector('#qe_'+n);
         if(point_button){
             point_button.onclick=function(event){
                 if(!event.ctrlKey && !event.altKey){ // 登録ページの表示
@@ -293,7 +306,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                             localStorage.setItem('QE_Point_'+UserID, write_json);
                             disp_button(n); }}
 
-                    else{ // クエリーの値が不正値の場合
+                    else{ // クエリー値が不正の場合
                         let ok=confirm(
                             "　💢 クエリー文字列が異常値で登録できません\n\n"+
                             "　「OK」を押すと先頭ページに移動します" );
@@ -311,43 +324,36 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                         disp_button(n); }}
 
                 else if(event.altKey){
-                    set_label(n); }
+                    edit_label(n); }
 
             } // point_button.onclick
+
         }} // point_set()
 
 
 
-    function set_label(n){
-        let label_panel=document.querySelector('#label_panel');
-        if(label_panel){
-            label_panel.style.display='block';
+    function edit_label(n){
+        let lb_panel=document.querySelector('#lb_panel');
+        if(lb_panel){
+            lb_panel.style.display='block';
 
-            let box=label_panel.querySelector('#lavel_box');
+            let box=lb_panel.querySelector('#lavel_box');
             if(box){
                 box.value=qe_ym[n+6]; }
 
             box.onchange=()=>{
                 qe_ym[n+6]=box.value;
                 let write_json=JSON.stringify(qe_ym);
-                localStorage.setItem('QE_Point_'+UserID, write_json); } // ローカルストレージ 保存
+                localStorage.setItem('QE_Point_'+UserID, write_json); // ローカルストレージ 保存
+                set_tip(n); } // チップ表示に反映
 
 
             let close_l=document.querySelector('.close_l');
-            if(close_l && label_panel){
+            if(close_l && lb_panel){
                 close_l.onclick=()=>{
-                    label_panel.style.display='none'; }}
+                    lb_panel.style.display='none'; }}
 
-        }} // set_label()
-
-
-
-    function point_top(){
-        let point_top=document.querySelector('#qe_top');
-        if(point_top){
-            point_top.onclick=function(event){
-                location.href=
-                    "https://blog.ameba.jp/ucs/entry/srventrylist.do"; }}}
+        }} // edit_label()
 
 
 
@@ -397,7 +403,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
-    function to_ucstop(){
+    function to_ucstop(){ // ページヘッダーに「管理トップ」のアイコンボタン
         let ucs_sw=
             '<li class="ucs_sw">'+
             '<a href="https://blog.ameba.jp/ucs/top.do">管理トップ</a></li>';
@@ -850,7 +856,6 @@ function get_now(){ // 時刻比較のための現在時刻の整数化
 
     let now=year + formatTime(month) + formatTime(date) +
         formatTime(hour) + formatTime(minute);
-
     return parseInt(now, 10);
 
 } // get_now
@@ -942,8 +947,6 @@ if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場�
                 document.querySelector('input[name="entry_created_datetime"]');
             if(entry_created_datetime){
                 entry_created_datetime.value=new_post_time; } // コピー元の投稿日時を設定
-
-            // 2017-07-31 02:00:00
 
 
             let p_title=document.querySelector('input[name="entry_title"]');
