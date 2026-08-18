@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        3.1
+// @version        3.2
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -247,7 +247,12 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         if(point_top){
             point_top.onclick=function(event){
                 location.href=
-                    "https://blog.ameba.jp/ucs/entry/srventrylist.do"; }}}
+                    "https://blog.ameba.jp/ucs/entry/srventrylist.do"; }
+
+            point_top.oncontextmenu=function(event){
+                event.preventDefault();
+                let url="https://blog.ameba.jp/ucs/entry/srventrylist.do";
+                window.open(url, '_blank'); }}}
 
 
 
@@ -327,6 +332,13 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                     edit_label(n); }
 
             } // point_button.onclick
+
+
+            point_button.oncontextmenu=function(event){
+                event.preventDefault();
+                let url=
+                    "https://blog.ameba.jp/ucs/entry/srventrylist.do"+ qe_ym[n];
+                window.open(url, '_blank'); }
 
         }} // point_set()
 
