@@ -81,8 +81,8 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         '<p>　　Alt+Click ▼ </p>'+
         '</div>'+
         '<div class="qe_help_d">'+
-        '<p>　 Ctrl+Click：現在の表示年月を登録　Ctrl+Shift+Click：登録を削除</p>'+
-        '<p>▼ Click：登録ページを表示　　　　　Alt+Click：ボタンのラベル編集</p>'+
+        '<p>　 Ctrl+Click：現在の表示年月を登録　Ctrl+Shift+Click：登録削除</p>'+
+        '<p>▼ Click / R-Click：登録ページを表示　&#x2000;　Alt+Click：ラベルの編集</p>'+
         '</div></div></div>'+
 
         '<button class="qe_button" id="qe_1">'+
