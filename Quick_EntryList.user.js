@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        3.2
+// @version        3.3
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -201,7 +201,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
     scheduled();
     weekend();
     to_ucstop();
-    show_edit_open();
+    qe_backup();
 
 
 
@@ -426,14 +426,72 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
-    function show_edit_open(){
-        let action_link=document.querySelectorAll('.action a');
-        for(let k=0; k<action_link.length; k++){
-            action_link[k].addEventListener('click', function(event){
-                if(event.shiftKey){
-                    let sw=action_link[k].closest('.action');
-                    if(sw){
-                        sw.style.boxShadow='inset 0 0 0 16px #00cfb9'; }}}); }}
+    function qe_backup(){
+        let qe_s=document.querySelector('#disp_qe .qe_s');
+        let qe_panel=document.querySelector('#qe_panel');
+        if(qe_s && qe_panel){
+            qe_s.onclick=function(event){
+                if(event.altKey){
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    if(p_open==0){
+                        p_open=1;
+                        qe_panel.style.display="block";
+                        backup(qe_panel); }
+                    else{
+                        p_open=0;
+                        qe_panel.style.display="none" }}}}
+
+
+        function backup(qe_panel){
+            let write_button=qe_panel.querySelector('.write_button');
+            let read_button=qe_panel.querySelector('.read_button');
+            let read_file=qe_panel.querySelector('.read_file');
+            let close=qe_panel.querySelector('.close');
+
+
+            write_button.onclick=function(){
+                let write_json=JSON.stringify(qe_ym);
+                let blob=new Blob([write_json], {type: 'application/json'});
+                let a_elem=document.createElement('a');
+                a_elem.href=URL.createObjectURL(blob);
+                a_elem.download='QuickEntryList_'+UserID+'.json'; // 保存ファイル名
+                a_elem.click();
+                URL.revokeObjectURL(a_elem.href); }
+
+
+            read_button.onclick=function(){
+                read_file.click(); }
+
+            read_file.addEventListener("change" , function(){
+                if(!(read_file.value)) return; // ファイルが選択されない場合
+                let file_list=read_file.files;
+                if(!file_list) return; // ファイルリストが選択されない場合
+                let file=file_list[0];
+                if(!file) return; // ファイルが無い場合
+
+                let file_reader=new FileReader();
+                file_reader.readAsText(file);
+                file_reader.onload=function(){
+                    if(file_reader.result.slice(0, 6)=='["","?'){ // QuickEntryList.jsonの確認
+                        qe_ym=JSON.parse(file_reader.result); // 読込みデータで上書き処理
+
+                        let write_json=JSON.stringify(qe_ym);
+                        localStorage.setItem('QE_Point_'+UserID, write_json); // ローカルストレージ 保存
+
+                        for(let k=1; k<7; k++){
+                            disp_button(k)}
+                    }}});
+
+
+            close.onclick=function(){
+                if(p_open==1){
+                    p_open=0;
+                    qe_panel.style.display='none'; }}
+
+        } // backup()
+
+    } // qe_backup()
 
 
 
@@ -449,7 +507,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                 let y_pos=rect.top + window.scrollY - 42;
                 let x_pos=rect.left - 2;
                 panel_item(1, k);
-                panel_copy(y_pos, x_pos, k); }
+                panel_copy(1, y_pos, x_pos, k); }
             else{ // 通常の複製
                 let title=entry_title[k].value;
                 title=title.substring(0, 10); // タイトルの先頭10文字
@@ -458,11 +516,38 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         }} // for()
 
 
-    function panel_item(n, k){
+
+    let action_link=document.querySelectorAll('.action a');
+    for(let k=0; k<action_link.length; k++){
+        action_link[k].onmousedown=(event)=>{
+            if(event.shiftKey){ //「編集」の「Shift+左Click」 編集済ボタン色「グリーン」
+                let sw=action_link[k].closest('.action');
+                if(sw){
+                    sw.style.boxShadow='inset 0 0 0 16px #00cfb9'; }}
+            else if(event.ctrlKey){ //「編集」の「Ctrl+左Click」 投稿日付の変更
+                let entry_item=action_link[k].closest('.entry-item');
+                let rect=entry_item.getBoundingClientRect();
+                let y_pos=rect.top + window.scrollY - 42;
+                let x_pos=rect.left - 2;
+                panel_item(0, k);
+                panel_copy(0, y_pos, x_pos, k); }}
+
+    } // for()
+
+
+
+    function panel_item(n, k){ // n:0:編集 1:複製 2:リセット
         let entry_item=document.querySelectorAll('.entry-item');
+        let prosess_a=entry_item[k].querySelector('.action a.process');
         let prosess_b=entry_item[k].querySelector('button.process');
-        if(prosess_b){
-            if(n==1){
+        if(prosess_a && prosess_b){
+            if(n==0){
+                for(let i=0; i<entry_item.length; i++){
+                    entry_item[i].style.outline='';
+                    entry_item[i].style.pointerEvents='none'; }
+                entry_item[k].style.outline='2px solid #6bc1cf';
+                entry_item[k].style.background='#e2eef0'; }
+            else if(n==1){
                 for(let i=0; i<entry_item.length; i++){
                     entry_item[i].style.outline='';
                     entry_item[i].style.pointerEvents='none'; }
@@ -475,13 +560,15 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                 entry_item[k].style.background='';
                 prosess_b.disabled=false;
                 prosess_b.style.pointerEvents='';
+                prosess_a.style.pointerEvents='';
                 setTimeout(()=>{
                     for(let i=0; i<entry_item.length; i++){
                         entry_item[i].style.pointerEvents=''; }
                 }, 600); }}}
 
 
-    function panel_copy(y_pos, x_pos, k){
+
+    function panel_copy(n, y_pos, x_pos, k){ // n: 0:編集 1:複製
         fuse=1; // 🟢
 
         let copy_mode=localStorage.getItem('QE_Copy_mode'); // ローカルストレージ 保存名
@@ -619,29 +706,52 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         set6.onclick=()=>{
             fuse=0; // 🟢
             document.querySelector('.date_in').remove();
-            let sw=copy_button[k].closest('.action');
-            if(sw){
-                sw.style.boxShadow=''; }
-            panel_item(0, k); }
+            if(n==0){
+                let sw=action_link[k].closest('.action');
+                if(sw){
+                    sw.style.boxShadow=''; }}
+            if(n==1){
+                let sw=copy_button[k].closest('.action');
+                if(sw){
+                    sw.style.boxShadow=''; }}
+            panel_item(2, k); }
 
 
         if(document.querySelector('.date_in')){
             setTimeout(()=>{
-                copy_button[k].disabled=false;
-                let sw=copy_button[k].closest('.action');
-                if(sw){
-                    sw.style.boxShadow='inset 0 0 0 16px #b1dcff'; }
+                if(n==0){
+                    action_link[k].style.pointerEvents='auto';
+                    let sw=action_link[k].closest('.action');
+                    if(sw){
+                        sw.style.boxShadow='inset 0 0 0 16px #b1dcff'; }
 
-                copy_button[k].onmousedown=(event)=>{
-                    if(fuse==1){ // 🟢
-                        if(copy_mode==1){
-                            page='1'; }
-                        post_time='?pageID='+ page +'&entry_ym='+
-                            set1.value + set2.value +'+'+
-                            set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value;
+                    action_link[k].onclick=(event)=>{
+                        if(fuse==1){ // 🟢
+                            if(copy_mode==1){
+                                page='1'; }
+                            post_time='?pageID='+ page +'&entry_ym='+
+                                set1.value + set2.value +'+'+
+                                set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value;
 
-                        sessionStorage.setItem('QE_post', post_time);
-                    }}}, 500); }
+                            sessionStorage.setItem('QE_post', post_time); }}}
+
+                if(n==1){
+                    copy_button[k].disabled=false;
+                    let sw=copy_button[k].closest('.action');
+                    if(sw){
+                        sw.style.boxShadow='inset 0 0 0 16px #b1dcff'; }
+
+                    copy_button[k].onmousedown=(event)=>{
+                        if(fuse==1){ // 🟢
+                            if(copy_mode==1){
+                                page='1'; }
+                            post_time='?pageID='+ page +'&entry_ym='+
+                                set1.value + set2.value +'+'+
+                                set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value;
+
+                            sessionStorage.setItem('QE_post', post_time); }}}
+
+            }, 500); }
 
     } // panel_copy()
 
@@ -730,72 +840,6 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                 index=k;
                 temp_id=entry_id[k].value; }}
         return index; }
-
-
-
-    let qe_s=document.querySelector('#disp_qe .qe_s');
-    let qe_panel=document.querySelector('#qe_panel');
-    if(qe_s && qe_panel){
-        qe_s.onclick=function(event){
-            if(event.altKey){
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                if(p_open==0){
-                    p_open=1;
-                    qe_panel.style.display="block";
-                    backup(qe_panel); }
-                else{
-                    p_open=0;
-                    qe_panel.style.display="none" }}}}
-
-
-    function backup(qe_panel){
-        let write_button=qe_panel.querySelector('.write_button');
-        let read_button=qe_panel.querySelector('.read_button');
-        let read_file=qe_panel.querySelector('.read_file');
-        let close=qe_panel.querySelector('.close');
-
-
-        write_button.onclick=function(){
-            let write_json=JSON.stringify(qe_ym);
-            let blob=new Blob([write_json], {type: 'application/json'});
-            let a_elem=document.createElement('a');
-            a_elem.href=URL.createObjectURL(blob);
-            a_elem.download='QuickEntryList_'+UserID+'.json'; // 保存ファイル名
-            a_elem.click();
-            URL.revokeObjectURL(a_elem.href); }
-
-
-        read_button.onclick=function(){
-            read_file.click(); }
-
-        read_file.addEventListener("change" , function(){
-            if(!(read_file.value)) return; // ファイルが選択されない場合
-            let file_list=read_file.files;
-            if(!file_list) return; // ファイルリストが選択されない場合
-            let file=file_list[0];
-            if(!file) return; // ファイルが無い場合
-
-            let file_reader=new FileReader();
-            file_reader.readAsText(file);
-            file_reader.onload=function(){
-                if(file_reader.result.slice(0, 6)=='["","?'){ // QuickEntryList.jsonの確認
-                    qe_ym=JSON.parse(file_reader.result); // 読込みデータで上書き処理
-
-                    let write_json=JSON.stringify(qe_ym);
-                    localStorage.setItem('QE_Point_'+UserID, write_json); // ローカルストレージ 保存
-
-                    for(let k=1; k<7; k++){
-                        disp_button(k)}
-                }}});
-
-
-        close.onclick=function(){
-            if(p_open==1){
-                p_open=0;
-                qe_panel.style.display='none'; }}
-
-    } // backup()
 
 } // 記事の編集の場合
 
@@ -930,7 +974,7 @@ if(location.pathname.includes('draft')){ // 下書き保存確認画面の場合
 
 
 
-if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場合（複製操作のみ）
+if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場合
     let post_time=sessionStorage.getItem('QE_post');
     if(post_time){
 
