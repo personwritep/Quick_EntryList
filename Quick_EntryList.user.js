@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        3.3
+// @version        3.4
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -581,6 +581,11 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             assign_date='202608051200'; } // 指定投稿日付の初期値
         localStorage.setItem('QE_Assign_date', assign_date); // ローカルストレージ 保存
 
+        let pub_flg=localStorage.getItem('QE_Pub_flg'); // ローカルストレージ 保存名
+        if(pub_flg==null){
+            pub_flg=0; } // pub_flg「0」: 投稿 ,「1」: 下書 ,「2」: アメンバー
+        localStorage.setItem('QE_Pub_flg', pub_flg); // ローカルストレージ 保存
+
 
         let panel=
             '<div class="date_in">'+
@@ -592,13 +597,17 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             '<input id="set3" type="number" min="1" max="31" step="1" value="01"> 日　'+
             '<input id="set4" type="number" min="0" max="23" step="1" value="00">'+
             '：<input id="set5" type="number" min="0" max="59" step="1" value="00">　'+
-            '<input id="set6" type="submit" value="✖">'+
+            '<button id="set6" type="button">'+
+            '<span class="p">P</span>'+
+            '<span class="d">D</span>'+
+            '<span class="a">A</span></button>　'+
+            '<button id="set7" type="button">✖</button>'+
             '<style>'+
             '.date_in { position: absolute; top: '+ y_pos +'px; left: '+ x_pos +'px; '+
             'z-index: 100; padding: 6px 12px; white-space: nowrap; '+
-            'color: #000; font: normal 16px/22px Meiryo; background: #6bc1cf; } '+
-            '#set0, #set1, #set2, #set3, #set4, #set5, #set6 { '+
-            'font: 16px Meiryo; padding: 2px 2px 0 2px; text-align: center; } '+
+            'color: #000; font: normal 14px/22px Meiryo; background: #6bc1cf; } '+
+            '#set0, #set1, #set2, #set3, #set4, #set5, #set7 { '+
+            'font: 16px Meiryo; padding: 2px 0 0; text-align: center; } '+
             '#set0 { width: 64px; box-shadow: inset 0 0 0 80px #ffd54f; } '+
             '#set0 .same { display: none; } #set0 .assign { display: inline; } '+
             '#set0.same { box-shadow: inset 0 0 0 80px #add8df; } '+
@@ -609,7 +618,15 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             ' -webkit-appearance: none; margin: 0; } '+
             '.date_in input[type="number"] { appearance: textfield; } '+
             '.date_in input[type="number"]:hover { outline: 2px solid #1976d2; } '+
-            '#set6 { padding: 2px 2px 0; } '+
+            '#set6 { font: 16px Meiryo; width: 26px; padding: 3px 0 1px; text-align: center; '+
+            'border: 1px solid #666; border-radius: 2px; } '+
+            '#set6 .p, #set6 .d, #set6 .a { display: none; } '+
+            '#set6.p .p, #set6.d .d, #set6.a .a { display: inline; } '+
+            '#set6.p { color: #000; background: #fff; } '+
+            '#set6.d { color: #fff; background: #2196f3; } '+
+            '#set6.a { color: #fff; '+
+            'background: linear-gradient(to bottom, #9ed7d2, #009688 80%, #009688); } '+
+            '#set7 { padding: 2px 2px 0; margin-left: 8px; } '+
             '</style></div>';
 
         if(!document.querySelector('.date_in')){
@@ -625,6 +642,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         let set4=document.querySelector('#set4');
         let set5=document.querySelector('#set5');
         let set6=document.querySelector('#set6');
+        let set7=document.querySelector('#set7');
 
         let nowPage=document.querySelector('input[name="nowPage"]');
         let page=nowPage.value;
@@ -703,7 +721,27 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                 save_assign(); }}
 
 
-        set6.onclick=()=>{
+        if(set6){
+            pug_class(pub_flg);
+
+            set6.onclick=()=>{
+                pub_flg=(pub_flg+1)%3;
+                pug_class(pub_flg);
+                localStorage.setItem('QE_Pub_flg', pub_flg); } // ローカルストレージ 保存
+
+            function pug_class(n){
+                if(n==0){
+                    set6.classList.remove('d', 'a');
+                    set6.classList.add('p'); }
+                else if(n==1){
+                    set6.classList.remove('p', 'a');
+                    set6.classList.add('d'); }
+                else if(n==2){
+                    set6.classList.remove('p', 'd');
+                    set6.classList.add('a'); }}}
+
+
+        set7.onclick=()=>{
             fuse=0; // 🟢
             document.querySelector('.date_in').remove();
             if(n==0){
