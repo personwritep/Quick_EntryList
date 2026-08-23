@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        3.4
+// @version        3.5
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -495,36 +495,16 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
-    let fuse=0; // 0:無効 1:有効 パネル複製機能の有効・無効のフラグ 🟢
-
-    let copy_button=document.querySelectorAll('.actions .process[onclick*="copyEntry"]');
-    let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
-    for(let k=0; k<copy_button.length; k++){
-        copy_button[k].onmouseup=(event)=>{
-            if(event.ctrlKey){ //「Ctrl + Click」で「複製パネル」を使った複製 🟠
-                let entry_item=copy_button[k].closest('.entry-item');
-                let rect=entry_item.getBoundingClientRect();
-                let y_pos=rect.top + window.scrollY - 42;
-                let x_pos=rect.left - 2;
-                panel_item(1, k);
-                panel_copy(1, y_pos, x_pos, k); }
-            else{ // 通常の複製
-                let title=entry_title[k].value;
-                title=title.substring(0, 10); // タイトルの先頭10文字
-                sessionStorage.setItem('QE_copy', title); }
-
-        }} // for()
-
-
+    let fuse=0; // 0:無効 1:有効（操作抑止）拡張編集・拡張複製の操作フィルターのフラグ 🟢
 
     let action_link=document.querySelectorAll('.action a');
     for(let k=0; k<action_link.length; k++){
         action_link[k].onmousedown=(event)=>{
-            if(event.shiftKey){ //「編集」の「Shift+左Click」 編集済ボタン色「グリーン」
+            if(event.shiftKey){ //「編集」の「Shift+左Click」編集済を示す「グリーン」ボタン
                 let sw=action_link[k].closest('.action');
                 if(sw){
-                    sw.style.boxShadow='inset 0 0 0 16px #00cfb9'; }}
-            else if(event.ctrlKey){ //「編集」の「Ctrl+左Click」 投稿日付の変更
+                    sw_green(sw); }}
+            else if(event.ctrlKey){ //「編集」の「Ctrl+左Click」拡張編集
                 let entry_item=action_link[k].closest('.entry-item');
                 let rect=entry_item.getBoundingClientRect();
                 let y_pos=rect.top + window.scrollY - 42;
@@ -535,8 +515,33 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
     } // for()
 
 
+    function sw_green(sw){
+        if(fuse==0){
+            sw.style.boxShadow='inset 0 0 0 16px #00cfb9'; }}
 
-    function panel_item(n, k){ // n:0:編集 1:複製 2:リセット
+
+
+    let copy_button=document.querySelectorAll('.actions .process[onclick*="copyEntry"]');
+    let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
+    for(let k=0; k<copy_button.length; k++){
+        copy_button[k].onmousedown=(event)=>{
+            if(event.ctrlKey){ //「複製」の「Ctrl + Click」拡張複製
+                let entry_item=copy_button[k].closest('.entry-item');
+                let rect=entry_item.getBoundingClientRect();
+                let y_pos=rect.top + window.scrollY - 42;
+                let x_pos=rect.left - 2;
+                panel_item(1, k);
+                panel_copy(1, y_pos, x_pos, k); }
+            else{ // 通常の複製
+                let title=entry_title[k].value;
+                title=title.substring(0, 10); // タイトルの先頭10文字
+                sessionStorage.setItem('QE_copy', title); }}
+
+    } // for()
+
+
+
+    function panel_item(n, k){ // n: 0:拡張編集 1:拡張複製 2:リセット
         let entry_item=document.querySelectorAll('.entry-item');
         let prosess_a=entry_item[k].querySelector('.action a.process');
         let prosess_b=entry_item[k].querySelector('button.process');
@@ -568,7 +573,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
-    function panel_copy(n, y_pos, x_pos, k){ // n: 0:編集 1:複製
+    function panel_copy(n, y_pos, x_pos, k){ // n: 0:拡張編集 1:拡張複製
         fuse=1; // 🟢
 
         let copy_mode=localStorage.getItem('QE_Copy_mode'); // ローカルストレージ 保存名
@@ -729,14 +734,14 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                 pug_class(pub_flg);
                 localStorage.setItem('QE_Pub_flg', pub_flg); } // ローカルストレージ 保存
 
-            function pug_class(n){
-                if(n==0){
+            function pug_class(s){
+                if(s==0){
                     set6.classList.remove('d', 'a');
                     set6.classList.add('p'); }
-                else if(n==1){
+                else if(s==1){
                     set6.classList.remove('p', 'a');
                     set6.classList.add('d'); }
-                else if(n==2){
+                else if(s==2){
                     set6.classList.remove('p', 'd');
                     set6.classList.add('a'); }}}
 
@@ -757,37 +762,47 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
         if(document.querySelector('.date_in')){
             setTimeout(()=>{
-                if(n==0){
+                if(n==0){ // 拡張編集
                     action_link[k].style.pointerEvents='auto';
                     let sw=action_link[k].closest('.action');
                     if(sw){
                         sw.style.boxShadow='inset 0 0 0 16px #b1dcff'; }
 
-                    action_link[k].onclick=(event)=>{
+                    action_link[k].addEventListener('click', function(event){
                         if(fuse==1){ // 🟢
-                            if(copy_mode==1){
-                                page='1'; }
-                            post_time='?pageID='+ page +'&entry_ym='+
-                                set1.value + set2.value +'+'+
-                                set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value;
+                            if(event.ctrlKey || event.shiftKey){ //「編集」ボタンの操作抑止
+                                event.preventDefault();
+                                event.stopImmediatePropagation(); }
+                            else{
+                                if(copy_mode==1){
+                                    page='1'; }
+                                post_time='?pageID='+ page +'&entry_ym='+
+                                    set1.value + set2.value +'+'+
+                                    set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value;
 
-                            sessionStorage.setItem('QE_post', post_time); }}}
+                                sessionStorage.setItem('QE_post', post_time); }}
+                    }, { capture: true }); }
 
-                if(n==1){
+                if(n==1){ // 拡張複製
                     copy_button[k].disabled=false;
                     let sw=copy_button[k].closest('.action');
                     if(sw){
                         sw.style.boxShadow='inset 0 0 0 16px #b1dcff'; }
 
-                    copy_button[k].onmousedown=(event)=>{
+                    copy_button[k].addEventListener('click', function(event){
                         if(fuse==1){ // 🟢
-                            if(copy_mode==1){
-                                page='1'; }
-                            post_time='?pageID='+ page +'&entry_ym='+
-                                set1.value + set2.value +'+'+
-                                set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value;
+                            if(event.ctrlKey || event.shiftKey){ //「複製」ボタンの操作抑止
+                                event.preventDefault();
+                                event.stopImmediatePropagation(); }
+                            else{
+                                if(copy_mode==1){
+                                    page='1'; }
+                                post_time='?pageID='+ page +'&entry_ym='+
+                                    set1.value + set2.value +'+'+
+                                    set2.value +'月'+ set3.value +'日 '+ set4.value +':'+ set5.value;
 
-                            sessionStorage.setItem('QE_post', post_time); }}}
+                                sessionStorage.setItem('QE_post', post_time); }}
+                    }, { capture: true }); }
 
             }, 500); }
 
@@ -828,9 +843,8 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
     let qe_copy=sessionStorage.getItem('QE_copy');
-    if(qe_copy){ // 複製操作で最新ページを開いた時に実行
+    if(qe_copy){ // 複製で最新ページを開いた時に実行
         let title=sessionStorage.getItem('QE_copy');
-        sessionStorage.removeItem('QE_copy'); // ストレージの複製フラグを削除
 
         let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
         let entry_id=document.querySelectorAll('input[name="entry_id"]');
@@ -838,17 +852,23 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
         let index=newest_index();
         if(index!=-1 && entry_title[index].value.includes(title)){ // タイトルがコピー元と一致
-            entry_item[index].style.outline='2px solid #2196f3'; // 複製した記事の青枠表示
+            entry_item[index].style.outline='2px solid #2196f3'; // 複製した記事に青枠表示
 
             let dupe_id=entry_id[index].value;
             let post_time=sessionStorage.getItem('QE_post');
-            if(post_time){ // 投稿日付を指定した複製の場合　再編集で開く
+            if(post_time){ // 拡張複製の場合　再編集で開く　複製フラグを残す
                 let edit_url='/ucs/entry/srventryupdateinput.do?id='+ dupe_id;
-                location.href=edit_url; }}} // if(qe_copy)
+                location.href=edit_url; }
+            else{
+                sessionStorage.removeItem('QE_copy'); } // 複製フラグを削除
+
+        } // タイトルがコピー元と一致
+    } // if(qe_copy)
+
     else{
         let post_time=sessionStorage.getItem('QE_post');
         if(post_time){
-            sessionStorage.removeItem('QE_post'); // 複製の post_timeフラグを削除（最終工程）
+            sessionStorage.removeItem('QE_post'); // 拡張複製の post_timeフラグを削除（最終工程）
             let search=post_time.split('+')[0];
             search=search.substr(0, search.indexOf('ym=') + 9);
 
@@ -861,11 +881,11 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             setTimeout(()=>{
                 let entry_id=document.querySelectorAll('input[name="entry_id"]');
                 let entry_item=document.querySelectorAll('.entry-item');
-                let index=newest_index();
-                if(index!=-1 && entry_id[index].value==post_id){
-                    entry_item[index].style.outline='2px solid #2196f3'; }
+                for(let k=0; k<entry_id.length; k++){
+                    if(entry_id[k].value==post_id){
+                        entry_item[k].style.outline='2px solid #2196f3'; }}
 
-                sessionStorage.removeItem('QE_pid'); // 記事IDのフラグを削除
+                sessionStorage.removeItem('QE_pid'); // 記事IDフラグを削除
             }, 400); }} // else
 
 
@@ -960,7 +980,7 @@ function get_now(){ // 時刻比較のための現在時刻の整数化
 if(location.pathname.includes('draft')){ // 下書き保存確認画面の場合
 
     let post_time=sessionStorage.getItem('QE_post');
-    if(post_time){ // 複製作業で下書き投稿をした場合
+    if(post_time){ // 拡張編集・拡張複製で下書き保存をした場合
         sessionStorage.removeItem('QE_post'); // タイムスタンプフラグを削除
         setTimeout(()=>{
             window.close(); // 確認画面を閉じる
@@ -1012,9 +1032,28 @@ if(location.pathname.includes('draft')){ // 下書き保存確認画面の場合
 
 
 
+if(location.pathname.includes('updateend')){ // 投稿確認画面の場合
+
+    let post_time=sessionStorage.getItem('QE_post');
+    if(post_time){ // 拡張編集・拡張複製で投稿をした場合
+        sessionStorage.removeItem('QE_post'); // タイムスタンプフラグを削除
+        setTimeout(()=>{
+            window.close(); // 確認画面を閉じる
+        }, 400); } // 200以下では投稿後の編集画面が閉じない
+
+} // 投稿確認画面の場合
+
+
+
+
 if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場合
     let post_time=sessionStorage.getItem('QE_post');
     if(post_time){
+        let pub_flg=0;
+        pub_flg=localStorage.getItem('QE_Pub_flg'); //「0」:投稿、「1」:下書、「2」:アメンバー
+        let copy=sessionStorage.getItem('QE_copy'); // 拡張複製のフラグ
+        if(copy){
+            sessionStorage.removeItem('QE_copy'); } // 複製フラグを削除
 
         let sleep=(ms)=> new Promise(resolve=> setTimeout(resolve, ms));
 
@@ -1022,10 +1061,11 @@ if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場�
             await task1();
             await sleep(200); // 200ms待機
             await task2();
-            await sleep(200);
-            await task3();
-            await sleep(200);
-            await task4(); }
+            if(pub_flg==1){ // 下書き保存の場合
+                await sleep(40);
+                await task3();
+                await sleep(40);
+                await task4(); }}
 
         runSequence();
 
@@ -1042,36 +1082,50 @@ if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場�
             if(entry_created_datetime){
                 entry_created_datetime.value=new_post_time; } // コピー元の投稿日時を設定
 
+            let amFlg=document.querySelector('#amemberFlg');
+            if(amFlg){
+                if(pub_flg==2){ // アメンバー投稿の選択
+                    amFlg.checked=true; }
+                else{
+                    amFlg.checked=false; }}
 
-            let p_title=document.querySelector('input[name="entry_title"]');
-            if(p_title){
-                let title_tx=p_title.value;
-                p_title.value=title_tx.replace('【複製】', '©'); } // 記事タイトル先頭に「©」を追加
-
+            if(copy){ // 拡張複製の場合
+                let p_title=document.querySelector('input[name="entry_title"]');
+                if(p_title){
+                    let title_tx=p_title.value;
+                    p_title.value=title_tx.replace('【複製】', '©'); }} // 記事タイトル先頭に「©」を追加
 
             let entry_id=document.querySelector('input[name="entry_id"]');
             if(entry_id){
                 let post_id=entry_id.value;
-                sessionStorage.setItem('QE_pid', post_id); } // 投稿記事のIDを記録
+                sessionStorage.setItem('QE_pid', post_id); } // 送信した記事のIDを記録
         } // task1()
 
 
         function task2(){
+            let publish_b0=document.querySelector('button.js-submitButton[publishflg="0"]');
             let publish_b1=document.querySelector('button.js-submitButton[publishflg="1"]');
-            if(publish_b1){
-                let mevent=new MouseEvent('mousedown', {
-                    bubbles: true,
-                    cancelable: true, });
-                publish_b1.dispatchEvent(mevent); // SP Coutionの離脱防止をキャンセル
-                publish_b1.click(); // 下書き保存
+            if(publish_b0 && publish_b1){
+                if(pub_flg==0 || pub_flg==2){ //「全員に公開」「アメンバー限定公開」
+                    let mevent=new MouseEvent('mousedown', {
+                        bubbles: true,
+                        cancelable: true, });
+                    publish_b0.dispatchEvent(mevent); // SP Coutionの離脱防止をキャンセル
+                    publish_b0.click(); } // 投稿する
+                else if(pub_flg==1){ //「下書」
+                    let mevent=new MouseEvent('mousedown', {
+                        bubbles: true,
+                        cancelable: true, });
+                    publish_b1.dispatchEvent(mevent); // SP Coutionの離脱防止をキャンセル
+                    publish_b1.click(); } // 下書き保存
             }} // task2()
 
 
         function task3(){
             let prev_url=document.referrer;
             if(prev_url){
-                window.open(prev_url, '_blank'); // 記事の編集を別タブに開く
-            }} // task3()
+                window.open(prev_url, '_blank'); } // 記事の編集を別タブに開く
+        } // task3()
 
 
         function task4(){
