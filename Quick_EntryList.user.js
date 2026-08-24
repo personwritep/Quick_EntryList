@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        3.5
+// @version        3.6
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -507,7 +507,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             else if(event.ctrlKey){ //「編集」の「Ctrl+左Click」拡張編集
                 let entry_item=action_link[k].closest('.entry-item');
                 let rect=entry_item.getBoundingClientRect();
-                let y_pos=rect.top + window.scrollY - 42;
+                let y_pos=rect.top + window.scrollY - 40;
                 let x_pos=rect.left - 2;
                 panel_item(0, k);
                 panel_copy(0, y_pos, x_pos, k); }}
@@ -528,7 +528,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             if(event.ctrlKey){ //「複製」の「Ctrl + Click」拡張複製
                 let entry_item=copy_button[k].closest('.entry-item');
                 let rect=entry_item.getBoundingClientRect();
-                let y_pos=rect.top + window.scrollY - 42;
+                let y_pos=rect.top + window.scrollY - 40;
                 let x_pos=rect.left - 2;
                 panel_item(1, k);
                 panel_copy(1, y_pos, x_pos, k); }
@@ -543,6 +543,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
     function panel_item(n, k){ // n: 0:拡張編集 1:拡張複製 2:リセット
         let entry_item=document.querySelectorAll('.entry-item');
+        let entry_item_h2=document.querySelectorAll('.entry-item h2');
         let prosess_a=entry_item[k].querySelector('.action a.process');
         let prosess_b=entry_item[k].querySelector('button.process');
         if(prosess_a && prosess_b){
@@ -550,19 +551,22 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                 for(let i=0; i<entry_item.length; i++){
                     entry_item[i].style.outline='';
                     entry_item[i].style.pointerEvents='none'; }
-                entry_item[k].style.outline='2px solid #6bc1cf';
-                entry_item[k].style.background='#e2eef0'; }
+                entry_item[k].style.outline='2px solid #347c9f';
+                entry_item[k].style.background='#fff';
+                entry_item_h2[k].style.background='#fff'; }
             else if(n==1){
                 for(let i=0; i<entry_item.length; i++){
                     entry_item[i].style.outline='';
                     entry_item[i].style.pointerEvents='none'; }
-                entry_item[k].style.outline='2px solid #6bc1cf';
-                entry_item[k].style.background='#e2eef0';
+                entry_item[k].style.outline='2px solid #347c9f';
+                entry_item[k].style.background='#fff';
+                entry_item_h2[k].style.background='#fff';
                 prosess_b.disabled=true;
                 prosess_b.style.pointerEvents='auto'; }
             else{
                 entry_item[k].style.outline='';
                 entry_item[k].style.background='';
+                entry_item_h2[k].style.background='';
                 prosess_b.disabled=false;
                 prosess_b.style.pointerEvents='';
                 prosess_a.style.pointerEvents='';
@@ -594,6 +598,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
         let panel=
             '<div class="date_in">'+
+            '<button id="set7" type="button">✖</button>'+
             '<button id="set0" type="button">'+
             '<span class="same">Same</span><span class="assign">Assign</span>'+
             '</button>　'+
@@ -605,33 +610,31 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             '<button id="set6" type="button">'+
             '<span class="p">P</span>'+
             '<span class="d">D</span>'+
-            '<span class="a">A</span></button>　'+
-            '<button id="set7" type="button">✖</button>'+
+            '<span class="a">A</span></button>'+
+
             '<style>'+
             '.date_in { position: absolute; top: '+ y_pos +'px; left: '+ x_pos +'px; '+
-            'z-index: 100; padding: 6px 12px; white-space: nowrap; '+
-            'color: #000; font: normal 14px/22px Meiryo; background: #6bc1cf; } '+
-            '#set0, #set1, #set2, #set3, #set4, #set5, #set7 { '+
-            'font: 16px Meiryo; padding: 2px 0 0; text-align: center; } '+
-            '#set0 { width: 64px; box-shadow: inset 0 0 0 80px #ffd54f; } '+
+            'z-index: 100; padding: 7px 12px; white-space: nowrap; '+
+            'color: #fff; font: normal 14px/22px Meiryo; background: #347c9f; } '+
+            '#set0, #set1, #set2, #set3, #set4, #set5, #set6, #set7 { font: 16px Meiryo; '+
+            'padding: 2px 0 0; text-align: center; border: none;  border-radius: 3px; } '+
+            '#set0 { width: 64px; background: linear-gradient(to bottom, #fffcbf, #ffd60f); } '+
             '#set0 .same { display: none; } #set0 .assign { display: inline; } '+
-            '#set0.same { box-shadow: inset 0 0 0 80px #add8df; } '+
+            '#set0.same { background: linear-gradient(to bottom, #d7f8f8, #41e4ff); } '+
             '#set0.same .same { display: inline; } #set0.same .assign { display: none; } '+
             '#set1 { width: 48px; } '+
-            '#set2, #set3, #set4, #set5 { width: 28px; } '+
+            '#set2, #set3, #set4, #set5 { width: 32px; } '+
             '.date_in input[type="number"]::-webkit-inner-spin-button { '+
             ' -webkit-appearance: none; margin: 0; } '+
             '.date_in input[type="number"] { appearance: textfield; } '+
             '.date_in input[type="number"]:hover { outline: 2px solid #1976d2; } '+
-            '#set6 { font: 16px Meiryo; width: 26px; padding: 3px 0 1px; text-align: center; '+
-            'border: 1px solid #666; border-radius: 2px; } '+
+            '#set6 { width: 26px; } '+
             '#set6 .p, #set6 .d, #set6 .a { display: none; } '+
             '#set6.p .p, #set6.d .d, #set6.a .a { display: inline; } '+
-            '#set6.p { color: #000; background: #fff; } '+
-            '#set6.d { color: #fff; background: #2196f3; } '+
-            '#set6.a { color: #fff; '+
-            'background: linear-gradient(to bottom, #9ed7d2, #009688 80%, #009688); } '+
-            '#set7 { padding: 2px 2px 0; margin-left: 8px; } '+
+            '#set6.p { color: #000; background: linear-gradient(to bottom, #fafafa, #dadada); } '+
+            '#set6.d { color: #000; background: linear-gradient(to bottom, #90e5ff, #54d0ff); } '+
+            '#set6.a { color: #fff; background: linear-gradient(to bottom, #13d6c5, #009688); } '+
+            '#set7 { color: #fff; background: none; margin: 0 12px 0 -2px ; } '+
             '</style></div>';
 
         if(!document.querySelector('.date_in')){
@@ -747,8 +750,15 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
         set7.onclick=()=>{
+            end_panel(n, k); }
+
+        document.addEventListener("keydown", (event)=>{
+            if(event.keyCode==27){
+                end_panel(n, k); }});
+
+        function end_panel(n, k){
             fuse=0; // 🟢
-            document.querySelector('.date_in').remove();
+            document.querySelector('.date_in')?.remove();
             if(n==0){
                 let sw=action_link[k].closest('.action');
                 if(sw){
@@ -811,6 +821,8 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
     function mouse_wheelset(){ // マウスホイールで設定可能にする
+        let step=1;
+
         let input=document.querySelectorAll('.date_in input[type="number"]');
         for(let k=0; k<input.length; k++){
             input[k].addEventListener('wheel', function(event){
@@ -818,15 +830,29 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
                 if(event.deltaY<0){ // deltaYが負なら上方向（増加）、正なら下方向（減少）
                     if(input[k].value/1<input[k].max/1){
-                        input[k].stepUp(); }}
+                        step_act_up(k); }}
                 else{
                     if(input[k].value/1>input[k].min/1){
-                        input[k].stepDown(); }}
+                        step_act_down(k); }}
 
                 input[k].value=input[k].value.padStart(2, '0');
                 set_assign_date();
 
             }, { passive: false }); }
+
+
+        function step_act_up(k){
+            input[k].stepUp(step); }
+
+        function step_act_down(k){
+            input[k].stepDown(step); }
+
+        document.addEventListener("keydown", (event)=>{
+            if(event.shiftKey){
+                step=10; }});
+
+        document.addEventListener("keyup", (event)=>{
+            step=1; });
 
 
         function set_assign_date(){ // ホイール設定値をストレージに保存
@@ -1039,7 +1065,7 @@ if(location.pathname.includes('updateend')){ // 投稿確認画面の場合
         sessionStorage.removeItem('QE_post'); // タイムスタンプフラグを削除
         setTimeout(()=>{
             window.close(); // 確認画面を閉じる
-        }, 400); } // 200以下では投稿後の編集画面が閉じない
+        }, 500); } // 200以下では投稿後の編集画面が閉じない
 
 } // 投稿確認画面の場合
 
