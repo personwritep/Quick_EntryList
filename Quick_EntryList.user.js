@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        3.6
+// @version        3.7
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -1065,7 +1065,7 @@ if(location.pathname.includes('updateend')){ // 投稿確認画面の場合
         sessionStorage.removeItem('QE_post'); // タイムスタンプフラグを削除
         setTimeout(()=>{
             window.close(); // 確認画面を閉じる
-        }, 500); } // 200以下では投稿後の編集画面が閉じない
+        }, 100); }
 
 } // 投稿確認画面の場合
 
@@ -1087,11 +1087,8 @@ if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場�
             await task1();
             await sleep(200); // 200ms待機
             await task2();
-            if(pub_flg==1){ // 下書き保存の場合
-                await sleep(40);
-                await task3();
-                await sleep(40);
-                await task4(); }}
+            await sleep(100);
+            await task3(); }
 
         runSequence();
 
@@ -1150,13 +1147,8 @@ if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場�
         function task3(){
             let prev_url=document.referrer;
             if(prev_url){
-                window.open(prev_url, '_blank'); } // 記事の編集を別タブに開く
+                window.location.href=prev_url; } //「記事の編集」に戻る
         } // task3()
-
-
-        function task4(){
-            window.close();
-        } // task4()
 
     } // if(post_time)
 
