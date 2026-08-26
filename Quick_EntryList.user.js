@@ -5,9 +5,7 @@
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
-// @match        https://blog.ameba.jp/ucs/entry/srventry*draft*
-// @match        https://blog.ameba.jp/ucs/entry/srventryupdateinput.do*
-// @match        https://blog.ameba.jp/ucs/entry/srventryupdateend.do
+// @match        https://blog.ameba.jp/ucs/entry/srventryupdate*
 // @match        https://blog.ameba.jp/ucs/top.do
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=ameblo.jp
 // @grant        none
