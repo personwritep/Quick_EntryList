@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        3.8
+// @version        3.9
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -126,6 +126,19 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         entrySort.insertAdjacentHTML('beforeend', ym_select); }
 
 
+    let sorting_ul=document.querySelector('#sorting ul');
+    if(sorting_ul){
+        let sw='<button class="tv">Title View</button>';
+        sorting_ul.insertAdjacentHTML('beforeend', sw); }
+
+    let entryList=document.querySelector('#entryList');
+    let tv_sw=document.querySelector('#sorting .tv');
+    if(entryList && tv_sw){
+        tv_sw.onclick=(event)=>{
+            event.preventDefault();
+            entryList.classList.toggle('tv'); }}
+
+
     let qe_style=
         '<style id="qe_style">'+
         '#ucsMainLeft h1 { display: flex; justify-content: space-between; } '+
@@ -175,16 +188,36 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         'padding: 1px 10px 0 0; } '+
         '#ym_select_box option:hover { background: #bbdefb; } '+
 
+        '#js-selection-edit-list-bar { position: absolute; top: -27px !important; } '+
+        '#sorting ul li { border: none; box-shadow: none; margin-right: 8px; } '+
+        '#sorting ul li.active { display: none; } '+
+        '#sorting ul li a[onclick*="ASC"] { font-size: 0; } '+
+        '#sorting ul li a[onclick*="ASC"]::before { content: "▼"; '+
+        'font: normal 14px/15px Meiryo; color: #fff; display: inline-block; height: 14px; '+
+        'outline: 1px solid #fff; vertical-align: 2px; } '+
+        '#sorting ul li a[onclick*="DESC"] { font-size: 0; } '+
+        '#sorting ul li a[onclick*="DESC"]::before { content: "▲"; '+
+        'font: normal 14px/15px Meiryo; color: #fff; display: inline-block; height: 14px; '+
+        'outline: 1px solid #fff; vertical-align: 2px; } '+
+        '#sorting .tv { font: 13px/14px MeiryoUI; padding: 3px 3px 2px; '+
+        'margin: -4px 10px 0 0; vertical-align: 2px; border: 1px solid #fff; border-radius: 2px; '+
+        'color: #fff; background: none; cursor: pointer; } '+
+
         '#ucsContent { margin-bottom: 0; } '+
         '#ucsMain { padding-bottom: 0; } '+
         '#globalHeader { min-width: 930px !important; } '+
         'li.ucs_sw { position: absolute !important; right: -140px; width: 90px; } '+
         'li.ucs_sw a:before { content: "\\EA31" !important; } '+
+        '</style>'+
+
+        '<style>'+
+        '#entryList.tv .entry h2 { width: 690px; padding: 8px 0; background: #fff; z-index: 1; } '+
+        '#entryList.tv .status-text, #entryList.tv .entry-info, #entryList.tv .entry-item .reactions { '+
+        'display: none; } '+
         '</style>';
 
     if(!document.querySelector('#qe_style')){
         document.documentElement.insertAdjacentHTML('beforeend', qe_style); }
-
 
 
     disp_select();
