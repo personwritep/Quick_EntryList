@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        3.9
+// @version        4.0
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -203,6 +203,9 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         'margin: -4px 10px 0 0; vertical-align: 2px; border: 1px solid #fff; border-radius: 2px; '+
         'color: #fff; background: none; cursor: pointer; } '+
 
+        '#entryList .entry-item.scheduled .entry h2 a { color: #000; } '+
+        '#entryList .entry-item.scheduled .entry-info .date { color: #fff; background: #2196f3; } '+
+
         '#ucsContent { margin-bottom: 0; } '+
         '#ucsMain { padding-bottom: 0; } '+
         '#globalHeader { min-width: 930px !important; } '+
@@ -229,10 +232,24 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         set_tip(k);
         point_set(k); }
 
-    scheduled();
-    weekend();
     to_ucstop();
     qe_backup();
+
+
+    let fuse=0; // 0:無効 1:有効（操作抑止）拡張編集・拡張複製の操作フィルターのフラグ 🟢
+
+    let entryList_all=document.querySelector('#entryList');
+    if(entryList_all){
+        let monitor=new MutationObserver(list_action);
+        monitor.observe(entryList_all, { childList: true }); }
+
+    list_action();
+
+    function list_action(){ //「entryList」を操作する関数群
+        scheduled();
+        weekend();
+        etit_list();
+        copy_list(); }
 
 
 
@@ -400,52 +417,6 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
-    function scheduled(){
-        let now=get_now();
-
-        let page_year=document.querySelector('#entryYear #year');
-        if(page_year){
-            page_year=page_year.textContent; }
-        else{
-            page_year='2000'; }
-
-        let entry_item=document.querySelectorAll('.entry-item');
-        for(let k=0; k<entry_item.length; k++){
-            let p_title=entry_item[k].querySelector('.titleCol h2 a');
-
-            let p_time=entry_item[k].querySelector('#entryList .date');
-            let p_date=p_time.textContent;
-            p_date=page_year + p_date.replace(/[^0-9]/g, '');
-            p_date=parseInt(p_date, 10); // 文字列を10進数に変換
-            if(p_date>now){
-                p_time.style.color='#fff';
-                p_time.style.background='#2196f3';
-                if(p_title){
-                    p_title.style.color='#000'; }}}
-
-    } // scheduled()
-
-
-
-    function weekend(){
-        let year_=document.querySelector('#year').textContent;
-        let year=parseInt(year_, 10);
-
-        let date=document.querySelectorAll('.entry-item .date');
-        for(let k=0; k<date.length; k++){
-            let day_s=date[k].textContent;
-            let mon=parseInt(day_s.slice(0, 2), 10) -1;
-            let day=parseInt(day_s.slice(3, 5), 10);
-            let today=new Date(year, mon, day);
-            if(today.getDay()==0){
-                date[k].style.boxShadow='2px 0 0 #fff, 6px 0 0 red'; }
-            if(today.getDay()==6){
-                date[k].style.boxShadow='2px 0 0 #fff, 6px 0 0 #2196f3'; }}
-
-    } // weekend()
-
-
-
     function to_ucstop(){ // ページヘッダーに「管理トップ」のアイコンボタン
         let ucs_sw=
             '<li class="ucs_sw">'+
@@ -526,49 +497,90 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
-    let fuse=0; // 0:無効 1:有効（操作抑止）拡張編集・拡張複製の操作フィルターのフラグ 🟢
+    function scheduled(){
+        let now=get_now();
 
-    let action_link=document.querySelectorAll('.action a');
-    for(let k=0; k<action_link.length; k++){
-        action_link[k].onmousedown=(event)=>{
-            if(event.shiftKey){ //「編集」の「Shift+左Click」編集済を示す「グリーン」ボタン
-                let sw=action_link[k].closest('.action');
-                if(sw){
-                    sw_green(sw); }}
-            else if(event.ctrlKey){ //「編集」の「Ctrl+左Click」拡張編集
-                let entry_item=action_link[k].closest('.entry-item');
-                let rect=entry_item.getBoundingClientRect();
-                let y_pos=rect.top + window.scrollY - 40;
-                let x_pos=rect.left - 2;
-                panel_item(0, k);
-                panel_copy(0, y_pos, x_pos, k); }}
+        let year=document.querySelector('#year').textContent;
+        if(year){
+            let page_year=parseInt(year, 10);
 
-    } // for()
+            let entry_item=document.querySelectorAll('.entry-item');
+            for(let k=0; k<entry_item.length; k++){
+                let p_title=entry_item[k].querySelector('h2 a');
 
+                let p_time=entry_item[k].querySelector('#entryList .date');
+                let p_date=p_time.textContent;
+                p_date=page_year + p_date.replace(/[^0-9]/g, '');
+                p_date=parseInt(p_date, 10); // 文字列を10進数に変換
+                if(p_date>now){
+                    entry_item[k].classList.add('scheduled'); }}}
 
-    function sw_green(sw){
-        if(fuse==0){
-            sw.style.boxShadow='inset 0 0 0 16px #00cfb9'; }}
+    } // scheduled()
 
 
 
-    let copy_button=document.querySelectorAll('.actions .process[onclick*="copyEntry"]');
-    let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
-    for(let k=0; k<copy_button.length; k++){
-        copy_button[k].onmousedown=(event)=>{
-            if(event.ctrlKey){ //「複製」の「Ctrl + Click」拡張複製
-                let entry_item=copy_button[k].closest('.entry-item');
-                let rect=entry_item.getBoundingClientRect();
-                let y_pos=rect.top + window.scrollY - 40;
-                let x_pos=rect.left - 2;
-                panel_item(1, k);
-                panel_copy(1, y_pos, x_pos, k); }
-            else{ // 通常の複製
-                let title=entry_title[k].value;
-                title=title.substring(0, 10); // タイトルの先頭10文字
-                sessionStorage.setItem('QE_copy', title); }}
+    function weekend(){
+        let year=document.querySelector('#year').textContent;
+        let page_year=parseInt(year, 10);
 
-    } // for()
+        let date=document.querySelectorAll('.entry-item .date');
+        for(let k=0; k<date.length; k++){
+            let day_s=date[k].textContent;
+            let mon=parseInt(day_s.slice(0, 2), 10) -1;
+            let day=parseInt(day_s.slice(3, 5), 10);
+            let today=new Date(page_year, mon, day);
+            if(today.getDay()==0){
+                date[k].style.boxShadow='2px 0 0 #fff, 6px 0 0 red'; }
+            if(today.getDay()==6){
+                date[k].style.boxShadow='2px 0 0 #fff, 6px 0 0 #2196f3'; }}
+
+    } // weekend()
+
+
+
+    function etit_list(){
+        let action_link=document.querySelectorAll('.action a');
+        for(let k=0; k<action_link.length; k++){
+            action_link[k].onmousedown=(event)=>{
+                if(event.shiftKey){ //「編集」の「Shift+左Click」編集済を示す「グリーン」ボタン
+                    let sw=action_link[k].closest('.action');
+                    if(sw){
+                        sw_green(sw); }}
+                else if(event.ctrlKey){ //「編集」の「Ctrl+左Click」拡張編集
+                    let entry_item=action_link[k].closest('.entry-item');
+                    let rect=entry_item.getBoundingClientRect();
+                    let y_pos=rect.top + window.scrollY - 40;
+                    let x_pos=rect.left - 2;
+                    panel_item(0, k);
+                    panel_copy(0, y_pos, x_pos, k); }}}
+
+
+        function sw_green(sw){
+            if(fuse==0){
+                sw.style.boxShadow='inset 0 0 0 16px #00cfb9'; }}
+
+    } // etit_list()
+
+
+
+    function copy_list(){
+        let copy_button=document.querySelectorAll('.actions .process[onclick*="copyEntry"]');
+        let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
+        for(let k=0; k<copy_button.length; k++){
+            copy_button[k].onmousedown=(event)=>{
+                if(event.ctrlKey){ //「複製」の「Ctrl + Click」拡張複製
+                    let entry_item=copy_button[k].closest('.entry-item');
+                    let rect=entry_item.getBoundingClientRect();
+                    let y_pos=rect.top + window.scrollY - 40;
+                    let x_pos=rect.left - 2;
+                    panel_item(1, k);
+                    panel_copy(1, y_pos, x_pos, k); }
+                else{ // 通常の複製
+                    let title=entry_title[k].value;
+                    title=title.substring(0, 10); // タイトルの先頭10文字
+                    sessionStorage.setItem('QE_copy', title); }}}
+
+    } // copy_list()
 
 
 
@@ -671,6 +683,9 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         if(!document.querySelector('.date_in')){
             document.body.insertAdjacentHTML('beforeend', panel); }
 
+
+        let copy_button=document.querySelectorAll('.actions .process[onclick*="copyEntry"]');
+        let action_link=document.querySelectorAll('.action a');
 
         let post_time;
 
