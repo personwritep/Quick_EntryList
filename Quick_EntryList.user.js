@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        4.0
+// @version        4.1
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -24,6 +24,8 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
     let point_ym; // ユーザーの指定年月のクエリー文字
     let qe_ym=[]; // Quick EntryList 復帰ポイントのユーザー設定
     let p_open=0; // qe_panel の表示・非表示
+
+    let t_view=0; // リストのタイトルの省略デザイン
 
 
 
@@ -131,12 +133,6 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         let sw='<button class="tv">Title View</button>';
         sorting_ul.insertAdjacentHTML('beforeend', sw); }
 
-    let entryList=document.querySelector('#entryList');
-    let tv_sw=document.querySelector('#sorting .tv');
-    if(entryList && tv_sw){
-        tv_sw.onclick=(event)=>{
-            event.preventDefault();
-            entryList.classList.toggle('tv'); }}
 
 
     let qe_style=
@@ -214,9 +210,15 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         '</style>'+
 
         '<style>'+
-        '#entryList.tv .entry h2 { width: 690px; padding: 8px 0; background: #fff; z-index: 1; } '+
-        '#entryList.tv .status-text, #entryList.tv .entry-info, #entryList.tv .entry-item .reactions { '+
-        'display: none; } '+
+        '#entryList.tv1 .entry h2, #entryList.tv2 .entry h2 { '+
+        'width: 690px; padding: 8px 0; background: #fff; z-index: 1; } '+
+        '#entryList .status-text, #entryList .entry-info { z-index: 2; } '+
+        '#entryList.tv1 .theme, #entryList.tv1 .entry-item .reactions { display: none; } '+
+        '#entryList.tv1 .status-text { width: 9px; outline: 1px solid #aaa; '+
+        'box-shadow: -12px 0 0 #fff, 6px 0 0 #fff; } '+
+        '#entryList.tv1 .status-text:before { content: "" !important; } '+
+        '#entryList.tv2 .status-text, #entryList.tv2 .theme, #entryList.tv2 .date, '+
+        '#entryList.tv2 .entry-item .reactions { display: none !important; } '+
         '</style>';
 
     if(!document.querySelector('#qe_style')){
@@ -249,7 +251,8 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         scheduled();
         weekend();
         etit_list();
-        copy_list(); }
+        copy_list();
+        title_view(); }
 
 
 
@@ -911,6 +914,47 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                 localStorage.setItem('QE_Assign_date', assign_date); }}
 
     } // mouse_wheelset()
+
+
+
+    function title_view(){
+        let entryList=document.querySelector('#entryList');
+        let tv_sw=document.querySelector('#sorting .tv');
+        if(entryList && tv_sw){
+            tv_sw.onclick=(event)=>{
+                event.preventDefault();
+                t_view=(t_view+1)%3;
+                if(t_view==0){
+                    entryList.classList.remove('tv2'); }
+                else if(t_view==1){
+                    entryList.classList.add('tv1'); }
+                else if(t_view==2){
+                    entryList.classList.remove('tv1');
+                    entryList.classList.add('tv2'); }
+
+
+                let publish_flg=document.querySelectorAll('#entryList input[name="publish_flg"]');
+                let status_text=document.querySelectorAll('#entryList .status-text');
+                if(t_view==1){
+                    publish_flg.forEach((input, index)=>{
+                        if(input.value=='0'){
+                            status_text[index].textContent="P"; }
+                        else if(input.value=='1'){
+                            status_text[index].textContent="D"; }
+                        else if(input.value=='2'){
+                            status_text[index].textContent="A"; }}); }
+                else{
+                    publish_flg.forEach((input, index)=>{
+                        if(input.value=='0'){
+                            status_text[index].textContent="全員に公開"; }
+                        else if(input.value=='1'){
+                            status_text[index].textContent="下書き"; }
+                        else if(input.value=='2'){
+                            status_text[index].textContent="アメンバー"; }}); }
+
+            } // tv_sw.onclick
+
+        }} // title_view()
 
 
 
