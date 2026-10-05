@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        4.1
+// @version        4.2
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -236,7 +236,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
     to_ucstop();
     qe_backup();
-
+    import_process();
 
     let fuse=0; // 0:無効 1:有効（操作抑止）拡張編集・拡張複製の操作フィルターのフラグ 🟢
 
@@ -1014,6 +1014,79 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                 index=k;
                 temp_id=entry_id[k].value; }}
         return index; }
+
+
+
+    function import_process(){
+        let urlParam=document.querySelector('input[name="urlParam"]');
+        let currentTime=new Date();
+        let ym_now=
+            String(currentTime.getFullYear())+String(currentTime.getMonth()+1).padStart(2, '0');
+
+        if(urlParam && urlParam.value.endsWith(ym_now)){
+            let nowPage=document.querySelector('input[name="nowPage"]');
+            if(nowPage && nowPage.value=="1"){
+                let val=urlParam.value;
+                let year=val.substring(val.length - 6, val.length - 2);
+                let month=val.substring(val.length - 2);
+                let year_next;
+                let month_next;
+                if(month!='12'){
+                    year_next=year/1;
+                    month_next=month/1+1; }
+                else{
+                    year_next=year/1+1;
+                    month_next=1; }
+                let urlParam_next=year_next.toString() + month_next.toString().padStart(2, '0');
+                let nextMonthUrl=
+                    "https://blog.ameba.jp/ucs/entry/srventrylist.do?entry_ym="+urlParam_next;
+
+                try{
+                    next_month_date(nextMonthUrl); }
+                catch(error){
+                    alert('次月データの読込みエラーが発生しました:', error); }
+
+            } // if(nowPage && nowPage.value=="1")
+        } // if(urlParam && urlParam.value.endsWith(ym_now))
+
+
+        async function next_month_date(nextMonthUrl){
+            let response=await fetch(nextMonthUrl);
+            if(!response.ok){
+                throw new Error('ネットワークエラー'); }
+
+            let htmlText=await response.text();
+            let parser=new DOMParser();
+            let doc=parser.parseFromString(htmlText, 'text/html');
+
+
+            let ul_all=doc.querySelector('#entry-list'); // 次月の「entry-list'」を取得
+            if(ul_all){
+                let entry_item=ul_all.querySelectorAll('li.entry-item');
+                entry_item.forEach((li, index)=>{
+                    li.classList.add('scheduled'); }); // 未来の投稿日時のデザイン
+
+                let checkbox_column=ul_all.querySelectorAll('.checkbox-column');
+                checkbox_column.forEach((checkbox, index)=>{
+                    checkbox.remove(); }); //「リストを編集」のチェックボックスを削除
+
+
+                let add_ul=
+                    '<ul id="add_entry-list"></ul>'+
+                    '<div style="height: 12px; margin: 4px 0; background: #72b9f2;"></div>';
+
+                let this_time_ul=document.querySelector('#entry-list');
+                if(this_time_ul){
+                    if(!document.querySelector('#add_entry-list')){
+                        this_time_ul.insertAdjacentHTML('beforebegin', add_ul); }}
+
+                let added=document.querySelector('#add_entry-list');
+                if(added){
+                    added.innerHTML=ul_all.innerHTML; }
+
+            } // if(ul_all)
+        } // next_month_date()
+    } // import_process()
 
 } // 記事の編集の場合
 
