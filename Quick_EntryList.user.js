@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        4.2
+// @version        4.3
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -25,7 +25,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
     let qe_ym=[]; // Quick EntryList 復帰ポイントのユーザー設定
     let p_open=0; // qe_panel の表示・非表示
 
-    let t_view=0; // リストのタイトルの省略デザイン
+    let t_view; // リストのタイトルの省略デザイン
 
 
 
@@ -184,7 +184,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         'padding: 1px 10px 0 0; } '+
         '#ym_select_box option:hover { background: #bbdefb; } '+
 
-        '#js-selection-edit-list-bar { position: absolute; top: -27px !important; } '+
+        '#js-selection-edit-list-bar { position: absolute; top: -26px; } '+
         '#sorting ul li { border: none; box-shadow: none; margin-right: 8px; } '+
         '#sorting ul li.active { display: none; } '+
         '#sorting ul li a[onclick*="ASC"] { font-size: 0; } '+
@@ -195,9 +195,18 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         '#sorting ul li a[onclick*="DESC"]::before { content: "▲"; '+
         'font: normal 14px/15px Meiryo; color: #fff; display: inline-block; height: 14px; '+
         'outline: 1px solid #fff; vertical-align: 2px; } '+
+        '#sorting ul li a:hover::before { box-shadow: 0 0 0 3px #2195f3; } '+
         '#sorting .tv { font: 13px/14px MeiryoUI; padding: 3px 3px 2px; '+
         'margin: -4px 10px 0 0; vertical-align: 2px; border: 1px solid #fff; border-radius: 2px; '+
         'color: #fff; background: none; cursor: pointer; } '+
+        '#sorting .tv:hover { box-shadow: 0 0 0 2px #2195f3; } '+
+        '.selection-bar .edit-list { font-size: 0; color: #fff; height: 19px; '+
+        'outline: 1px solid #fff; border-radius: 1px; } '+
+        '.selection-bar .edit-list:after { content: "一括処理"; font-size: 12px; '+
+        'padding-left: 2px; margin-top: -2px; } '+
+        '.selection-bar .edit-list:hover { '+
+        'font-weight: normal !important; box-shadow: 0 0 0 3px #2195f3; } '+
+        '#selectTheme:hover { box-shadow: 0 0 0 2px #2195f3; } '+
 
         '#entryList .entry-item.scheduled .entry h2 a { color: #000; } '+
         '#entryList .entry-item.scheduled .entry-info .date { color: #fff; background: #2196f3; } '+
@@ -237,6 +246,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
     to_ucstop();
     qe_backup();
     import_process();
+    theme_select();
 
     let fuse=0; // 0:無効 1:有効（操作抑止）拡張編集・拡張複製の操作フィルターのフラグ 🟢
 
@@ -921,18 +931,37 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         let entryList=document.querySelector('#entryList');
         let tv_sw=document.querySelector('#sorting .tv');
         if(entryList && tv_sw){
+            t_view=localStorage.getItem('T_View');
+            if(!t_view){
+                t_view=0; }
+            else{
+                t_view=t_view/1; } // 数値化
+
+            t_view_set(t_view);
+            p_flg_set(t_view);
+
+
             tv_sw.onclick=(event)=>{
                 event.preventDefault();
                 t_view=(t_view+1)%3;
+                localStorage.setItem('T_View', t_view);
+
+                t_view_set(t_view);
+                p_flg_set(t_view); }
+
+
+            function t_view_set(t_view){
                 if(t_view==0){
-                    entryList.classList.remove('tv2'); }
+                    entryList.classList.remove('tv1', 'tv2'); }
                 else if(t_view==1){
+                    entryList.classList.remove('tv2');
                     entryList.classList.add('tv1'); }
                 else if(t_view==2){
                     entryList.classList.remove('tv1');
-                    entryList.classList.add('tv2'); }
+                    entryList.classList.add('tv2'); }}
 
 
+            function p_flg_set(t_view){
                 let publish_flg=document.querySelectorAll('#entryList input[name="publish_flg"]');
                 let status_text=document.querySelectorAll('#entryList .status-text');
                 if(t_view==1){
@@ -950,11 +979,11 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                         else if(input.value=='1'){
                             status_text[index].textContent="下書き"; }
                         else if(input.value=='2'){
-                            status_text[index].textContent="アメンバー"; }}); }
+                            status_text[index].textContent="アメンバー"; }}); }} // p_flg_set()
 
-            } // tv_sw.onclick
+        } // if(entryList && tv_sw)
 
-        }} // title_view()
+    } // title_view()
 
 
 
@@ -1087,6 +1116,18 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             } // if(ul_all)
         } // next_month_date()
     } // import_process()
+
+
+
+    function theme_select(){
+        let selectTheme=document.querySelector('#selectTheme');
+        if(selectTheme){
+            if(selectTheme.value==''){
+                selectTheme.style.color='#fff';
+                selectTheme.style.background='transparent'; }
+            else{
+                selectTheme.style.color='#000';
+                selectTheme.style.background=''; }}}
 
 } // 記事の編集の場合
 
