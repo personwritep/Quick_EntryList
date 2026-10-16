@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        4.3
+// @version        4.4
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -1016,6 +1016,14 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             sessionStorage.removeItem('QE_post'); // 拡張複製の post_timeフラグを削除（最終工程）
             let search=post_time.split('+')[0];
             search=search.substr(0, search.indexOf('ym=') + 9);
+
+            let currentTime=new Date();
+            let ym_now=
+                String(currentTime.getFullYear())+String(currentTime.getMonth()+1).padStart(2, '0');
+            let search_last=search.split('ym=')[1];
+            if(search_last){
+                if(search_last/1==ym_now/1+1 || search_last/1==ym_now/1+89){ // 次月の場合のみ
+                    search='?entry_ym='+ym_now; }}
 
             let goto='https://blog.ameba.jp/ucs/entry/srventrylist.do'+ search;
             location.href=goto; } // post_time の複製指定先のリスト画面を開く
