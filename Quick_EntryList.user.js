@@ -245,8 +245,11 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
     to_ucstop();
     qe_backup();
-    import_process();
     theme_select();
+
+    list_work();
+    import_process();
+
 
     let fuse=0; // 0:無効 1:有効（操作抑止）拡張編集・拡張複製の操作フィルターのフラグ 🟢
 
@@ -260,7 +263,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
     function list_action(){ //「entryList」を操作する関数群
         scheduled();
         weekend();
-        etit_list();
+        edit_list();
         copy_list();
         title_view(); }
 
@@ -551,7 +554,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
-    function etit_list(){
+    function edit_list(){
         let action_link=document.querySelectorAll('.action a');
         for(let k=0; k<action_link.length; k++){
             action_link[k].onmousedown=(event)=>{
@@ -572,7 +575,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             if(fuse==0){
                 sw.style.boxShadow='inset 0 0 0 16px #00cfb9'; }}
 
-    } // etit_list()
+    } //edit_list()
 
 
 
@@ -987,74 +990,103 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
 
-    let qe_copy=sessionStorage.getItem('QE_copy');
-    if(qe_copy){ // 複製で最新ページを開いた時に実行
-        let title=sessionStorage.getItem('QE_copy');
-
-        let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
-        let entry_id=document.querySelectorAll('input[name="entry_id"]');
-        let entry_item=document.querySelectorAll('.entry-item');
-
-        let index=newest_index();
-        if(index!=-1 && entry_title[index].value.includes(title)){ // タイトルがコピー元と一致
-            entry_item[index].style.outline='2px solid #2196f3'; // 複製した記事に青枠表示
-
-            let dupe_id=entry_id[index].value;
-            let post_time=sessionStorage.getItem('QE_post');
-            if(post_time){ // 拡張複製の場合　再編集で開く　複製フラグを残す
-                let edit_url='/ucs/entry/srventryupdateinput.do?id='+ dupe_id;
-                location.href=edit_url; }
+    function theme_select(){
+        let selectTheme=document.querySelector('#selectTheme');
+        if(selectTheme){
+            if(selectTheme.value==''){
+                selectTheme.style.color='#fff';
+                selectTheme.style.background='transparent'; }
             else{
-                sessionStorage.removeItem('QE_copy'); } // 複製フラグを削除
+                selectTheme.style.color='#000';
+                selectTheme.style.background=''; }}}
 
-        } // タイトルがコピー元と一致
-    } // if(qe_copy)
 
-    else{
-        let post_time=sessionStorage.getItem('QE_post');
-        if(post_time){
-            sessionStorage.removeItem('QE_post'); // 拡張複製の post_timeフラグを削除（最終工程）
-            let search=post_time.split('+')[0];
-            search=search.substr(0, search.indexOf('ym=') + 9);
 
+    function list_work(){ // リスト処理  🅰️
+        let qe_copy=sessionStorage.getItem('QE_copy');
+        if(qe_copy){ // 複製で最新ページを開いた時に実行
+            let title=sessionStorage.getItem('QE_copy');
+
+            let entry_title=document.querySelectorAll('input[name="disp_entry_title"]');
+            let entry_id=document.querySelectorAll('input[name="entry_id"]');
+            let entry_item=document.querySelectorAll('.entry-item');
+
+            let index=newest_index();
+            if(index!=-1 && entry_title[index].value.includes(title)){ // タイトルがコピー元と一致
+                entry_item[index].style.outline='2px solid #2196f3'; // 複製した記事に青枠表示
+
+                let dupe_id=entry_id[index].value;
+                let post_time=sessionStorage.getItem('QE_post');
+                if(post_time){ // 拡張複製の場合　再編集で開く　複製フラグを残す
+                    let edit_url='/ucs/entry/srventryupdateinput.do?id='+ dupe_id;
+                    location.href=edit_url; }
+                else{
+                    sessionStorage.removeItem('QE_copy'); } // 複製フラグを削除
+
+            } // タイトルがコピー元と一致
+        } // if(qe_copy)
+
+        else{
+            let post_time=sessionStorage.getItem('QE_post');
+            if(post_time){
+                sessionStorage.removeItem('QE_post'); // 拡張複製の post_timeフラグを削除（最終工程）
+                let search=post_time.split('+')[0];
+                search=search.substr(0, search.indexOf('ym=') + 9);
+
+                if(!is_nextym(search)){
+                    let goto='https://blog.ameba.jp/ucs/entry/srventrylist.do'+ search;
+                    location.href=goto; } // post_time の複製指定先のリスト画面を開く
+                else{
+                    let goto='https://blog.ameba.jp/ucs/entry/srventrylist.do';
+                    location.href=goto; }} // Top（今月）を開く
+
+
+            let urlParam=document.querySelector('input[name="urlParam"]');
+            let param=urlParam.value;
+            let this_ym=param.split('ym=')[1];
+            if(this_ym && is_nextym(this_ym)){
+                let goto='https://blog.ameba.jp/ucs/entry/srventrylist.do';
+                location.href=goto; } // 次月を開いた場合は Top（今月）を開く
+
+
+            let post_id=sessionStorage.getItem('QE_pid'); // 複製投稿の記事IDフラグがある場合
+            if(post_id){
+                setTimeout(()=>{
+                    let entry_id=document.querySelectorAll('input[name="entry_id"]');
+                    let entry_item=document.querySelectorAll('.entry-item');
+                    for(let k=0; k<entry_id.length; k++){
+                        if(entry_id[k].value==post_id){
+                            entry_item[k].style.outline='2px solid #2196f3'; }}
+
+                    sessionStorage.removeItem('QE_pid'); // 記事IDフラグを削除
+                }, 400); }} // else
+
+
+        function newest_index(){ // IDの最新記事のindexを取得
+            let entry_id=document.querySelectorAll('input[name="entry_id"]');
+            let temp_id=0;
+            let index=-1;
+            for(let k=0; k<entry_id.length; k++){
+                if(temp_id<entry_id[k].value/1){
+                    index=k;
+                    temp_id=entry_id[k].value; }}
+            return index; }
+
+
+        function is_nextym(pub_ym){
             let currentTime=new Date();
             let ym_now=
                 String(currentTime.getFullYear())+String(currentTime.getMonth()+1).padStart(2, '0');
-            let search_last=search.split('ym=')[1];
-            if(search_last){
-                if(search_last/1==ym_now/1+1 || search_last/1==ym_now/1+89){ // 次月の場合のみ
-                    search='?entry_ym='+ym_now; }}
+            if(pub_ym){
+                let open_href;
+                if(pub_ym/1-ym_now/1==1 || pub_ym/1-ym_now/1==89){ // 次月の場合
+                    return true; }}}
 
-            let goto='https://blog.ameba.jp/ucs/entry/srventrylist.do'+ search;
-            location.href=goto; } // post_time の複製指定先のリスト画面を開く
-
-
-        let post_id=sessionStorage.getItem('QE_pid'); // 複製投稿の記事IDフラグがある場合
-        if(post_id){
-            setTimeout(()=>{
-                let entry_id=document.querySelectorAll('input[name="entry_id"]');
-                let entry_item=document.querySelectorAll('.entry-item');
-                for(let k=0; k<entry_id.length; k++){
-                    if(entry_id[k].value==post_id){
-                        entry_item[k].style.outline='2px solid #2196f3'; }}
-
-                sessionStorage.removeItem('QE_pid'); // 記事IDフラグを削除
-            }, 400); }} // else
-
-
-    function newest_index(){ // IDの最新記事のindexを取得
-        let entry_id=document.querySelectorAll('input[name="entry_id"]');
-        let temp_id=0;
-        let index=-1;
-        for(let k=0; k<entry_id.length; k++){
-            if(temp_id<entry_id[k].value/1){
-                index=k;
-                temp_id=entry_id[k].value; }}
-        return index; }
+    } // list_work()
 
 
 
-    function import_process(){
+    function import_process(){ // リスト処理  🅰️
         let urlParam=document.querySelector('input[name="urlParam"]');
         let currentTime=new Date();
         let ym_now=
@@ -1124,18 +1156,6 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
             } // if(ul_all)
         } // next_month_date()
     } // import_process()
-
-
-
-    function theme_select(){
-        let selectTheme=document.querySelector('#selectTheme');
-        if(selectTheme){
-            if(selectTheme.value==''){
-                selectTheme.style.color='#fff';
-                selectTheme.style.background='transparent'; }
-            else{
-                selectTheme.style.color='#000';
-                selectTheme.style.background=''; }}}
 
 } // 記事の編集の場合
 
@@ -1217,7 +1237,7 @@ function get_now(){ // 時刻比較のための現在時刻の整数化
 
 if(location.pathname.includes('draft')){ // 下書き保存確認画面の場合
 
-    let post_time=sessionStorage.getItem('QE_post');
+    let post_time=sessionStorage.getItem('QE_post'); // リスト処理 🅰️
     if(post_time){ // 拡張編集・拡張複製で下書き保存をした場合
         sessionStorage.removeItem('QE_post'); // タイムスタンプフラグを削除
         setTimeout(()=>{
@@ -1272,7 +1292,7 @@ if(location.pathname.includes('draft')){ // 下書き保存確認画面の場合
 
 if(location.pathname.includes('updateend')){ // 投稿確認画面の場合
 
-    let post_time=sessionStorage.getItem('QE_post');
+    let post_time=sessionStorage.getItem('QE_post'); // 🅰️
     if(post_time){ // 拡張編集・拡張複製で投稿をした場合
         sessionStorage.removeItem('QE_post'); // タイムスタンプフラグを削除
         setTimeout(()=>{
@@ -1284,7 +1304,7 @@ if(location.pathname.includes('updateend')){ // 投稿確認画面の場合
 
 
 
-if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場合
+if(location.pathname.includes('srventryupdateinput.do')){ // 編集画面の場合  🅰️
     let post_time=sessionStorage.getItem('QE_post');
     if(post_time){
         let pub_flg=0;
