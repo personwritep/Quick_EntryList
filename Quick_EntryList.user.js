@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        4.4
+// @version        4.5
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -219,8 +219,8 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         '</style>'+
 
         '<style>'+
-        '#entryList.tv1 .entry h2, #entryList.tv2 .entry h2 { '+
-        'width: 690px; padding: 8px 0; background: #fff; z-index: 1; } '+
+        '#entryList.tv1.wide .entry h2, #entryList.tv2.wide .entry h2 { '+
+        'width: 690px; margin-top: 6px; background: #fff; z-index: 1; } '+
         '#entryList .status-text, #entryList .entry-info { z-index: 2; } '+
         '#entryList.tv1 .theme, #entryList.tv1 .entry-item .reactions { display: none; } '+
         '#entryList.tv1 .status-text { width: 9px; outline: 1px solid #aaa; '+
@@ -954,6 +954,11 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
             function t_view_set(t_view){
+                if(is_wide()){
+                    entryList.classList.add('wide'); }
+                else{
+                    entryList.classList.remove('wide'); }
+
                 if(t_view==0){
                     entryList.classList.remove('tv1', 'tv2'); }
                 else if(t_view==1){
@@ -961,7 +966,16 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                     entryList.classList.add('tv1'); }
                 else if(t_view==2){
                     entryList.classList.remove('tv1');
-                    entryList.classList.add('tv2'); }}
+                    entryList.classList.add('tv2'); }
+
+                function is_wide(){
+                    let title=document.querySelector('.entry-item h2');
+                    if(title){
+                        let style=window.getComputedStyle(title);
+                        if(style.fontSize=='14px'){
+                            return true; }}}
+
+            } // t_view_set()
 
 
             function p_flg_set(t_view){
