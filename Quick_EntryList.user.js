@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Quick EntryList
 // @namespace        http://tampermonkey.net/
-// @version        4.5
+// @version        4.6
 // @description        記事の編集の機能拡張
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventrylist*
@@ -765,17 +765,30 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
 
 
         mouse_wheelset();
+        updateMaxDay();
+
+        function updateMaxDay(){
+            let set1=document.querySelector('#set1');
+            let set2=document.querySelector('#set2');
+            let set3=document.querySelector('#set3');
+            let maxDay=new Date(set1.value, set2.value, 0).getDate();
+            set3.max=maxDay; // 日の最大値を更新
+            if(set3.value>maxDay){
+                set3.value=maxDay; }}
 
         set1.oninput=()=>{
+            updateMaxDay();
             if(copy_mode==1){
                 save_assign(); }}
 
         set2.oninput=()=>{
+            updateMaxDay();
             set2.value=set2.value.padStart(2, '0');
             if(copy_mode==1){
                 save_assign(); }}
 
         set3.oninput=()=>{
+            updateMaxDay();
             set3.value=set3.value.padStart(2, '0');
             if(copy_mode==1){
                 save_assign(); }}
@@ -889,6 +902,7 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
         for(let k=0; k<input.length; k++){
             input[k].addEventListener('wheel', function(event){
                 event.preventDefault(); // ページ全体のスクロールを防ぐ
+                updateMaxDay();
 
                 if(event.deltaY<0){ // deltaYが負なら上方向（増加）、正なら下方向（減少）
                     if(input[k].value/1<input[k].max/1){
@@ -900,14 +914,25 @@ if(location.pathname.includes('srventrylist')){ // 記事の編集の場合
                 input[k].value=input[k].value.padStart(2, '0');
                 set_assign_date();
 
+                function updateMaxDay(){
+                    let set1=document.querySelector('#set1');
+                    let set2=document.querySelector('#set2');
+                    let set3=document.querySelector('#set3');
+                    let maxDay=new Date(set1.value, set2.value, 0).getDate();
+                    set3.max=maxDay; // 日の最大値を更新
+                    if(set3.value>maxDay){
+                        set3.value=maxDay; }}
+
             }, { passive: false }); }
 
 
         function step_act_up(k){
-            input[k].stepUp(step); }
+            input[k].stepUp(step);
+            input[k].dispatchEvent(new Event('input', { bubbles: true })); }
 
         function step_act_down(k){
-            input[k].stepDown(step); }
+            input[k].stepDown(step);
+            input[k].dispatchEvent(new Event('input', { bubbles: true })); }
 
         document.addEventListener("keydown", (event)=>{
             if(event.shiftKey){
